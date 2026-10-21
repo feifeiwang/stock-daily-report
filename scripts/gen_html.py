@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""生成手机竖屏（抖音可刷）HTML 行情速览（内置示例数据为 2026-10-20 版）。
+"""生成 2026-10-20 手机竖屏（抖音可刷）HTML 行情速览。
 设计基准 405x720（9:16），截图 DSF=2.6666667 -> 1080x1920/屏。
 所有图表为内联 SVG，无外部依赖；数据均为已核实公开数据。
 """
@@ -197,7 +197,7 @@ for name, pred, close, chg, ok in review:
     if ok is True:
         badge = '<span class="pill ok">✓ 准确</span>'
     elif ok is False:
-        badge = '<span class="pill part">◐ 部分准确</span>'
+        badge = '<span class="pill bad">✗ 不准确</span>'
     else:
         badge = '<span class="pill" style="color:#f5c542;background:rgba(245,197,66,.12)">◌ 今晚验证</span>'
     cls = "down" if chg.startswith("▼") else "up"
@@ -346,6 +346,7 @@ h1{font-size:23px;font-weight:900;margin-top:5px;letter-spacing:.3px}
 .chipv{font-size:10.5px;font-weight:700;padding:4px 8px;border-radius:8px}
 .chipv.ok{color:var(--down);background:rgba(14,203,129,.12);border:1px solid rgba(14,203,129,.35)}
 .chipv.part{color:var(--gold);background:rgba(245,197,66,.10);border:1px solid rgba(245,197,66,.35)}
+.chipv.bad{color:#8a94ac;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18)}
 .rv-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .rv{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:10px 11px}
 .rv-hd{display:flex;justify-content:space-between;align-items:center}
@@ -353,6 +354,7 @@ h1{font-size:23px;font-weight:900;margin-top:5px;letter-spacing:.3px}
 .pill{font-size:9.5px;font-weight:700;padding:3px 7px;border-radius:7px}
 .pill.ok{color:var(--down);background:rgba(14,203,129,.13)}
 .pill.part{color:var(--gold);background:rgba(245,197,66,.12)}
+.pill.bad{color:#8a94ac;background:rgba(255,255,255,.08)}
 .rv-pred{font-size:10px;color:var(--dim);margin-top:6px;line-height:1.4}
 .rv-act{font-size:15px;font-weight:900;margin-top:5px}
 .rv-act span{font-size:12px}
@@ -361,7 +363,7 @@ h1{font-size:23px;font-weight:900;margin-top:5px;letter-spacing:.3px}
 .nicon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;border:1px solid;flex:none}
 .nt{font-size:14px;font-weight:900}
 .ns{font-size:10.5px;color:var(--dim);margin-top:4px;line-height:1.5}
-.rcard{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:10px 14px 8px;margin-bottom:8px}
+.rcard{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:10px 14px 6px;margin-bottom:6px}
 .rc-hd{display:flex;align-items:baseline;gap:6px}
 .rc-name{font-size:14.5px;font-weight:900}
 .rc-tag{font-size:10px;color:var(--gold);font-weight:700;background:rgba(245,197,66,.10);padding:3px 7px;border-radius:7px}
