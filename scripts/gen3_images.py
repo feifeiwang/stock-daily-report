@@ -47,6 +47,7 @@ body{font-family:"Noto Sans CJK SC","Noto Sans SC",sans-serif;-webkit-font-smoot
 .rev-tag{margin-left:auto;font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap;}
 .tag-ok{color:#0ecb81;background:rgba(14,203,129,.12);border:1px solid rgba(14,203,129,.4);}
 .tag-half{color:#f5c542;background:rgba(245,197,66,.12);border:1px solid rgba(245,197,66,.4);}
+.tag-bad{color:#8a94ac;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);}
 .rev-pred{font-size:10px;color:#9aa4ba;margin-top:3px;line-height:1.4;}
 .rev-pred b{color:#c4cdde;font-weight:600;}
 .brief{margin:2px 16px 0;padding:6px 11px;background:rgba(19,27,49,.45);border:1px dashed #2a3a5e;border-radius:10px;}
@@ -183,7 +184,7 @@ D = {
     "big": "14 / 16", "big_note": "项判定准确",
     "sub2": "10-15：92% · 10-16：83% · 10-17主版已验证3.5项<br>恒指/恒生科技今晚收盘后回填终判",
     "sec1": "指数预测 vs 实际",
-    # (名称, 实际值HTML, tag类, tag文字, 预测回顾HTML)；待验证行用金色 act + tag-half
+    # (名称, 实际值HTML, tag类, tag文字, 预测回顾HTML)；待验证行用金色 act + tag-half，不准确用 tag-bad
     "rev": [
       ("上证指数", '<span class="rev-act up">3730.92<span>▲0.39%</span></span>', "tag-ok", "✓ 准确",
        "预测：<b>企稳偏强</b> · 收盘3690~3745 → 低开高走收3730.92，方向/区间/幅度全兑现"),
