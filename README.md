@@ -35,15 +35,15 @@
 ## 每日流程（10 步，详见 SKILL.md）
 
 ```
-0 防重复检查  → 确认当天 md 与 Excel 行都不存在（已生成的日期不重做）
+0 防重复+定位 → 与用户确认本期三项输出位置（网盘目录/本地工作区/Excel 路径）；确认当天 md 与 Excel 行都不存在
 1 采集核实    → WebSearch/WebFetch 采集前一交易日收盘/要闻，多源交叉，禁杜撰
-2 MD 日报     → 按 md-template.md 一次写成 {日期}.md
+2 MD 日报     → 按 md-template.md 一次写成 {工作区}/{日期}.md
 3 Excel       → 写当天预测行（openpyxl，一行一天）
 4 竖屏 HTML   → 复制昨日 gen_html 脚本改数据 → 运行
 5 测高把关    → measure_heights.py，溢出先压缩再往下
 6 长图        → shot_long.py 逐屏截图拼接
 7 三张图      → 复制昨日 gen3_images 脚本只改顶部 D 字典 → 运行 → 测高
-8 上传网盘    → 逐个串行：开票 → PUT → complete（禁止并行开票）
+8 上传网盘    → 传用户确认的目录，逐个串行：开票 → PUT → complete（禁止并行开票）
 9 展示        → present_files 三张图 + 当日结论
 ```
 
