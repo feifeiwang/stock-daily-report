@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""生成 2026-10-20 手机竖屏（抖音可刷）HTML 行情速览。
+"""生成 2026-10-21 手机竖屏（抖音可刷）HTML 行情速览。
 设计基准 405x720（9:16），截图 DSF=2.6666667 -> 1080x1920/屏。
 所有图表为内联 SVG，无外部依赖；数据均为已核实公开数据。
 """
@@ -95,30 +95,30 @@ def donut(pct, size=118, r=50, sw=13):
     )
 
 
-# ---------- 数据（均已核实，10-19 收盘 / 隔夜消息） ----------
+# ---------- 数据（均已核实，10-21 收盘 / 隔夜美股 10-20） ----------
 idx_rows = [
-    ("上证指数", 0.39), ("深证成指", 0.13), ("创业板指", -0.94), ("科创50", -2.17),
-    ("沪深300", 0.09), ("中证500", 0.41), ("北证50", -0.41), ("恒生指数", 0.52),
-    ("恒生科技", 1.16), ("道琼斯", -0.07), ("标普500", 0.41), ("纳斯达克", 1.11),
+    ("上证指数", -0.60), ("深证成指", -0.82), ("创业板指", -1.62), ("科创50", 0.06),
+    ("科创综指", -0.08), ("北证50", -0.72), ("恒生指数", -0.90), ("恒生科技", -1.26),
+    ("国企指数", -1.08), ("道琼斯", 1.02), ("标普500", 0.28), ("纳斯达克", -0.02),
 ]
 news = [
-    ("GDP", "#0ecb81", "前三季度GDP+4.6%，Q3回升至4.5%", "GDP总量107.11万亿；规上工业增加值+5.3%；工业机器人产量+29.1%、3D打印+62.5%；70城新房环比涨价城市增至17个"),
-    ("坛", "#f5c542", "金融街论坛：央行五项安排落地", "设立非银机构大额赎回流动性支持工具、SLF扩容、债市互联互通、退出存贷款基准利率方向已定；证监会六方面部署；首批18只主动ETF获批近360亿"),
-    ("行", "#0ecb81", "工行/建行创历史新高，机器人午后爆发", "工行3.07万亿重夺A股市值第一、建行3.03万亿；21家银行中期分红超2600亿；宇树科技+16.15%创上市以来最大单日涨幅、十余股涨停"),
-    ("芯", "#f6465d", "隔夜费半终结八连跌、存储暴涨", "纳指+1.11%、费半+1.61%；西数+6.09%/闪迪+5.53%/美光+2.97%；10Y美债+7.5bp至5.148%；WTI+2.22%报103.66美元"),
-    ("险", "#f6465d", "今日解禁高峰+情绪退潮信号", "颀中科技解禁69.23%约108.74亿、本周合计952.83亿（明日单日643.84亿）；新华传媒11连板终结、连板高度降至三板、封板率68.7%"),
+    ("榜", "#f5c542", "LPR连续17个月不变，央行切换隔夜逆回购", "1Y 3.00%/5Y+ 3.50%不变；退出存贷款基准利率；10-21起隔夜逆回购每日不超1万亿"),
+    ("数", "#0ecb81", "国家数据集团成立，数据要素引爆", "落地雄安；数据确权/DRG-DIP领涨；金融街论坛：北证50ETF推进+市值配售改革"),
+    ("宁", "#f6465d", "宁德时代暴跌12%：增收不增利+评级下调", "Q3净利212.46亿(+14.54%)远低于营收(+58.58%)；摩根大通H股目标价725→500港元；出口退税13%→9%"),
+    ("芯", "#f6465d", "美制裁DeepSeek等5家中企，国产模型密集迭代", "商务部回应；DeepSeek开源DeepInfer+V4.1 Flash；智谱/阶跃迭代；ASIC芯片+2.54%逆势吸金"),
+    ("资", "#f5c542", "ETF放量托底：创业板ETF成交破百亿", "10-21创业板ETF易方达成交破100亿；首批18只主动ETF 10-23开售（近360亿）"),
 ]
 review = [
-    ("上证指数", "预测 企稳偏强 · 3690~3745", "3730.92", "▲0.39%", True),
-    ("创业板指", "预测 探底企稳 · 2730~2780", "2746.29", "▼0.94%", True),
-    ("恒生指数", "预测 低开回踩·关口防守 · 24050~24400", "今晚验证", "10-20今日", None),
-    ("恒生科技", "预测 探底企稳·修复非反转 · 4070~4150", "今晚验证", "10-20今日", None),
+    ("上证指数", "预测 高开震荡·量能定高度 · 3725~3775", "3735.37", "▲0.12%", True),
+    ("创业板指", "预测 高开修复·存储链领涨 · 2720~2770", "2739.20", "▼0.26%", True),
+    ("恒生指数", "预测 平开震荡·修复反弹 · 24050~24400", "23867.74", "▼1.32%", False),
+    ("恒生科技", "预测 探底回升·修复非反转 · 4070~4150", "4045.91", "▼1.52%", False),
 ]
 forecasts = [
-    ("上证指数", "高开震荡·量能定高度", 3725, 3775, "-0.5%~+1.0%", 3730.92, "3715/3700", "3750~3770", True),
-    ("创业板指", "高开修复·存储链领涨", 2720, 2770, "-0.9%~+0.6%", 2746.29, "2720/2730", "2785~2800", True),
-    ("恒生指数", "平开低走·震荡修复", 24050, 24400, "-1.0%~+0.5%", 24186.83, "24000~24100", "24350~24500", True),
-    ("恒生科技", "探底回升·修复非反转", 4070, 4150, "-1.0%~+0.5%", 4108.24, "4040~4060", "4160~4180", True),
+    ("上证指数", "低开震荡·拉锯整理", 3688, 3723, "-0.9%~+0.5%", 3713.03, "3700/3680", "3735~3750", True),
+    ("创业板指", "低开探底·企稳修复", 2680, 2706, "-1.1%~+0.4%", 2694.71, "2660/2650", "2720~2740", False),
+    ("恒生指数", "低开震荡·弱势整理", 23540, 23770, "-0.7%~+0.8%", 23651.87, "23400~23500", "23850~24000", False),
+    ("恒生科技", "低开探底·弱势拉锯", 3976, 4013, "-0.7%~+0.7%", 3994.77, "3950~3970", "4035~4060", False),
 ]
 
 # ---------- 各屏 ----------
@@ -128,68 +128,68 @@ screens.append('''
 <section class="screen cover">
   <div class="cover-top">
     <span class="badge">AI 每日市场速览</span>
-    <span class="badge dim-badge">周二 · VOL.020</span>
+    <span class="badge dim-badge">周三 · VOL.021</span>
   </div>
   <div class="cover-mid">
-    <div class="cover-date">10.20</div>
+    <div class="cover-date">10.21</div>
     <div class="cover-title">每日行情速览</div>
-    <div class="cover-sub">上一开盘日 10·19 A股复盘　×　美股10·19　×　今日盘前前瞻<br>A股 · 港股 · 大盘 / 板块 / 个股 · 晨间观点记录</div>
+    <div class="cover-sub">10·21 A股/港股收盘复盘　×　美股10·20　×　明日盘面前瞻<br>A股 · 港股 · 大盘 / 板块 / 个股 · 观点记录</div>
   </div>
   <div class="cover-chips">
-    <div class="cchip"><div class="cc-m">上证指数</div><div class="cc-v">3730.92</div><div class="cc-c up">▲0.39%</div></div>
-    <div class="cchip"><div class="cc-m">恒生指数</div><div class="cc-v">24186.83</div><div class="cc-c up">▲0.52%</div></div>
-    <div class="cchip"><div class="cc-m">纳斯达克</div><div class="cc-v">26430.89</div><div class="cc-c up">▲1.11%</div></div>
+    <div class="cchip"><div class="cc-m">上证指数</div><div class="cc-v">3713.03</div><div class="cc-c down">▼0.60%</div></div>
+    <div class="cchip"><div class="cc-m">恒生指数</div><div class="cc-v">23651.87</div><div class="cc-c down">▼0.90%</div></div>
+    <div class="cchip"><div class="cc-m">纳斯达克</div><div class="cc-v">26424.82</div><div class="cc-c down">▼0.02%</div></div>
   </div>
   <div class="cover-hint"><span class="hint-arrow">↑</span> 上滑 · 开启今日速览</div>
-  <div class="cover-note">数据截至 10-19 收盘 · 美股为美东 10-19 · 港股为 10-16 收盘</div>
+  <div class="cover-note">数据截至 10-21 收盘 · 美股为美东 10-20</div>
 </section>''')
 
 screens.append(f'''
 <section class="screen">
-  <div class="hd"><div class="kicker">RECAP · 上一开盘日 10月19日</div><h1>低开高走，银行创新高</h1></div>
+  <div class="hd"><div class="kicker">RECAP · 10月21日 收盘</div><h1>缩量分化，电池链雪崩</h1></div>
   <div class="card">
-    <div class="card-t">主要指数涨跌幅（10-19 收盘 · 港股为10-16）</div>
-    {diverging_chart(idx_rows, 2.2, row_h=24)}
+    <div class="card-t">主要指数涨跌幅（10-21 收盘 · 美股为美东 10-20）</div>
+    {diverging_chart(idx_rows, 1.7, row_h=24)}
   </div>
   <div class="stat-strip">
-    <div class="stat"><div class="stat-v">1.44万亿</div><div class="stat-l">沪深成交 · 缩量1179亿</div></div>
-    <div class="stat"><div class="stat-v">2270:3126</div><div class="stat-l">上涨:下跌 · 约50家涨停</div></div>
-    <div class="stat"><div class="stat-v">-116亿</div><div class="stat-l">主力资金净卖出</div></div>
+    <div class="stat"><div class="stat-v">1.44万亿</div><div class="stat-l">沪深北成交 · 较上日缩量</div></div>
+    <div class="stat"><div class="stat-v">1981:3364</div><div class="stat-l">上涨:下跌 · 约50家涨停</div></div>
+    <div class="stat"><div class="stat-v">-87.8亿</div><div class="stat-l">主力资金净流出</div></div>
   </div>
-  <div class="note">沪指<span class="up">▲0.39%</span>站上3730：工行/建行创历史新高、机器人午后爆发、军工+2.99%；科创50<span class="down">▼2.17%</span>补跌、长鑫-7.77%；GDP+4.6%落地+金融街论坛央行五项安排；隔夜纳指<span class="up">▲1.11%</span>、费半终结八连跌</div>
+  <div class="note">沪指<span class="down">▼0.60%</span>失守3730：宁德时代<span class="down">-12.03%</span>砸塌电池链、电信运营商<span class="down">-4.15%</span>领跌；科创50<span class="up">▲0.06%</span>逆势翻红、ASIC芯片<span class="up">+2.54%</span>、数据确权/DRG领涨；创业板ETF易方达尾盘放量破百亿；隔夜道指<span class="up">▲1.02%</span>独涨、纳指<span class="down">▼0.02%</span></div>
 </section>''')
 
 screens.append(f'''
 <section class="screen">
-  <div class="hd"><div class="kicker">SECTORS · 板块结构（10-19）</div><h1>银行搭台，机器人接棒</h1></div>
+  <div class="hd"><div class="kicker">SECTORS · 板块结构（10-21）</div><h1>芯片吸金，电池崩塌</h1></div>
   <div class="card two-col">
     <div class="tc">
-      <div class="tc-t up-t">领涨 · 权重+事件</div>
-      <div class="tc-r"><span>国防军工(申万)</span><b class="up">+2.99%</b></div>
-      <div class="tc-r"><span>宇树科技</span><b class="up">+16.15%</b></div>
-      <div class="tc-r"><span>银行(工行/建行)</span><b class="up">历史新高</b></div>
-      <div class="tc-r"><span>四会富仕(PCB)</span><b class="up">20cm涨停</b></div>
+      <div class="tc-t up-t">领涨 · 政策+硬科技</div>
+      <div class="tc-r"><span>DRG/DIP(医保)</span><b class="up">近+3%</b></div>
+      <div class="tc-r"><span>ASIC芯片</span><b class="up">+2.54%</b></div>
+      <div class="tc-r"><span>数据确权</span><b class="up">主线爆发</b></div>
+      <div class="tc-r"><span>养殖/猪肉</span><b class="up">涨幅居前</b></div>
     </div>
     <div class="tc">
-      <div class="tc-t down-t">领跌 · 成长退潮</div>
-      <div class="tc-r"><span>半导体(概念)</span><b class="down">-2.07%</b></div>
-      <div class="tc-r"><span>长鑫科技</span><b class="down">-7.77%</b></div>
-      <div class="tc-r"><span>金健米业</span><b class="down">-9.99%</b></div>
-      <div class="tc-r"><span>宁德时代</span><b class="down">-3.60%</b></div>
+      <div class="tc-t down-t">领跌 · 事件冲击</div>
+      <div class="tc-r"><span>宁德时代</span><b class="down">-12.03%</b></div>
+      <div class="tc-r"><span>电信运营商</span><b class="down">-4.15%</b></div>
+      <div class="tc-r"><span>锂电池</span><b class="down">-3.75%</b></div>
+      <div class="tc-r"><span>中国移动</span><b class="down">-5.09%</b></div>
     </div>
   </div>
   <div class="card">
     <div class="card-t">行业与概念结构</div>
-    <div class="tc-r"><span>领涨行业</span><b>国防军工 · 家用电器 · 银行 · 煤炭 · 石化</b></div>
-    <div class="tc-r"><span>领跌行业</span><b>房地产 · 综合 · 农林牧渔 · 电子 · 社服</b></div>
-    <div class="tc-r"><span>领跌概念</span><b>种业 · 乳业 · 粮食 · CRO · 半导体 · 电池</b></div>
+    <div class="tc-r"><span>领涨概念</span><b>DRG/DIP · 数据确权 · 短剧游戏 · AI营销 · 激光通信</b></div>
+    <div class="tc-r"><span>领跌概念</span><b>固态电池 · 钠电池 · 六氟磷酸锂 · 电池回收 · 能源金属</b></div>
+    <div class="tc-r"><span>个股流出前三</span><b>宁德时代 -13.1亿 · 新易盛 -8.1亿 · 阳光电源 -6.9亿</b></div>
   </div>
   <div class="stat-strip">
-    <div class="stat"><div class="stat-v">约50 / 25</div><div class="stat-l">涨停 / 跌停</div></div>
-    <div class="stat"><div class="stat-v">-0.38%</div><div class="stat-l">涨跌中位数 · 个股跌多涨少</div></div>
-    <div class="stat"><div class="stat-v">19.33亿</div><div class="stat-l">亨通光电净流入居首</div></div>
+    <div class="stat"><div class="stat-v">约50 / 5</div><div class="stat-l">涨停 / 跌停</div></div>
+    <div class="stat"><div class="stat-v">+112.8亿</div><div class="stat-l">小单净流入 · 大单撤退</div></div>
+    <div class="stat"><div class="stat-v">324亿</div><div class="stat-l">宁德时代成交居首</div></div>
   </div>
-  <div class="note">银行创新高是“防守定价”、机器人是“超跌+国标+产量+29.1%”的事件驱动；主力净卖出116亿、电子净流出27.66亿——存量博弈下热点轮动加快，追高容错率低</div>
+  <div class="note">宁德时代Q3“增收不增利”（净利+14.54% vs 营收+58.58%）+摩根大通下调H股目标价+出口退税13%→9%集中引爆；资金“弃旧迎新”——从高位拥挤的电池链腾挪至数据要素与国产芯片</div>
 </section>''')
 
 review_cards = ""
@@ -207,23 +207,23 @@ for name, pred, close, chg, ok in review:
         % (name, badge, pred, close, cls, chg)
     )
 chips = ('<span class="chipv ok">上证 ✓</span><span class="chipv ok">创业板 ✓</span>'
-         '<span class="chipv" style="color:#f5c542;background:rgba(245,197,66,.10);border:1px solid rgba(245,197,66,.35)">恒指 ◌今晚</span>'
-         '<span class="chipv" style="color:#f5c542;background:rgba(245,197,66,.10);border:1px solid rgba(245,197,66,.35)">恒科 ◌今晚</span>'
-         '<span class="chipv ok">板块 ✓</span><span class="chipv part">个股 ◐</span>')
+         '<span class="chipv bad">恒指 ✗</span>'
+         '<span class="chipv bad">恒科 ✗</span>'
+         '<span class="chipv part">板块 ◐</span><span class="chipv part">个股 ◐</span>')
 
 screens.append(f'''
 <section class="screen">
-  <div class="hd"><div class="kicker">REVIEW · 昨日预测复盘（A股 10-19）</div><h1>大盘A股两项兑现</h1></div>
+  <div class="hd"><div class="kicker">REVIEW · 昨日预测复盘（10-20 A股 / 港股）</div><h1>A股兑现，港股误判</h1></div>
   <div class="donut-row">
-    <div class="donut-box">{donut(87.5)}</div>
+    <div class="donut-box">{donut(70.8)}</div>
     <div class="donut-side">
       <div class="ds-t">累计综合判定</div>
-      <div class="ds-v">14/16项 · 87.5%</div>
+      <div class="ds-v">17/24项 · 70.8%</div>
       <div class="chipv-row">{chips}</div>
     </div>
   </div>
   <div class="rv-grid">{review_cards}</div>
-  <div class="note">10-17/18/19三版同对象预测验证：上证3730.92(+0.39%)落在3690~3745、创业板2746.29(-0.94%)探底企稳落在2730~2780，方向/区间/幅度全兑现；板块多数兑现（军工/银行/涨价链占优、半导体/存储/CRO/农业承压），偏差为人形机器人新主线未预见+德明利+6.40%逆势反弹；恒指/恒科今晚收盘后回填</div>
+  <div class="note">10-20版预测验证：上证3735.37(+0.12%)、创业板2739.20(-0.26%)双双落在预测区间内；恒指23867.74(-1.32%)、恒科4045.91(-1.52%)双双跌破区间下限——连续两版误判港股修复力度，盲区在低估南向连续净卖出与锂电/大模型高位股独立杀跌的压制</div>
 </section>''')
 
 news_cards = ""
@@ -235,20 +235,20 @@ for tag, col, t, sub in news:
     )
 screens.append(f'''
 <section class="screen">
-  <div class="hd"><div class="kicker">NEWS · 消息面（10-19 全天 ~ 10-20 早间）</div><h1>五条关键消息</h1></div>
+  <div class="hd"><div class="kicker">NEWS · 消息面（10-20 ~ 10-21）</div><h1>五条关键消息</h1></div>
   <div class="news-list">{news_cards}</div>
-  <div class="note">其他：首批18只主动管理型ETF获批（近360亿）；亨通光电三季报预增150%+、生益科技预增160%+；商务部对无人机/盾构机出口管制；珠海航展门票开售（12-7~13）；今日9:00 LPR+英伟达GTC柏林+APEC财长会香港+宁德/移动三季报</div>
+  <div class="note">其他：道指+1.02%独涨、3M+5.78%领涨、SpaceX盘后涨超6%（Q3营收超预期）；美伊“七日计划”谈判反复、布油109美元高位；今夜特斯拉+Meta财报为AI资本开支“压力测试”；Anthropic半年营收163亿美元/亏807亿；通用汽车200亿回购</div>
 </section>''')
 
 fc_cards = "".join(range_card(*f) for f in forecasts)
 screens.append(f'''
 <section class="screen">
-  <div class="hd"><div class="kicker">FORECAST · 今日（10-20 A股 / 港股）</div><h1>高开修复，量能定高度</h1></div>
+  <div class="hd"><div class="kicker">FORECAST · 明日（10-22 A股 / 港股）</div><h1>低开拉锯，轻指数重结构</h1></div>
   {fc_cards}
   <div class="sec-block">
-    <div class="sb-row"><span class="sb-t">A股占优</span><span class="chips-in">存储 · 机器人 · PCB · 券商 · 银行 · 涨价链</span></div>
-    <div class="sb-row"><span class="sb-t">A股承压</span><span class="chips-in dim-in">农业 · 地产 · CRO · AI高位股 · 解禁股</span></div>
-    <div class="sb-row"><span class="sb-t">港股</span><span class="chips-in">占优：存储 · 高股息 · 创新药 · 预增龙头</span><span class="chips-in dim-in">｜承压：算力 · 能源 · 保险 · CRO</span></div>
+    <div class="sb-row"><span class="sb-t">A股占优</span><span class="chips-in">数据要素 · 国产AI链 · AI应用 · 激光通信 · 红利 · 养殖</span></div>
+    <div class="sb-row"><span class="sb-t">A股承压</span><span class="chips-in dim-in">电池链 · 电信运营商 · AI高位股 · 煤炭酿酒</span></div>
+    <div class="sb-row"><span class="sb-t">港股</span><span class="chips-in">占优：联想 · 创新药 · 高股息 · 光通信</span><span class="chips-in dim-in">｜承压：电池 · 科网权重 · 算力概念</span></div>
   </div>
 </section>''')
 
@@ -267,13 +267,13 @@ def stock_group(title, watch, avoid):
 screens.append(f'''
 <section class="screen">
   <div class="hd"><div class="kicker">STOCKS · 个股线索（仅港股与A股）</div><h1>关注与回避名单</h1></div>
-  {stock_group("港股", [("宁德时代", "03750·财报"), ("中国移动", "00941·财报"), ("腾讯", "00700"), ("中芯国际", "00981·存储")],
-                [("联想集团", "00992·勿追"), ("赣锋锂业", "01772"), ("药明生物", "02269"), ("中国海洋石油", "00883·油价")])}
-  {stock_group("上证（主板）", [("工商银行", "601398·新高"), ("建设银行", "601939·新高"), ("亨通光电", "600487·流入19亿"), ("生益科技", "600183·预增160%")],
-                [("长鑫科技", "688825·卖出12亿"), ("新华传媒", "600825·连板终"), ("招商南油", "601975"), ("颀中科技", "688352·解禁69%")])}
-  {stock_group("创业板", [("佰维存储", "688525·存储"), ("兆威机电", "003021·机器人"), ("四会富仕", "300852·PCB"), ("澜起科技", "688008·回调")],
-                [("新易盛", "300502"), ("中际旭创", "300308"), ("天孚通信", "300394"), ("胜宏科技", "300476")])}
-  <div class="note">隔夜存储暴涨直接映射A股存储链，科创50（-2.17%）系被错杀、今日有修复动能；“易中天”本周主力净流出百亿+Meta/特斯拉10-21财报周，AI硬件以“修复非反转”对待</div>
+  {stock_group("港股", [("联想集团", "00992·财报超预期"), ("长飞光纤", "06869·净买2.5亿"), ("中国海洋石油", "00883·净买1.7亿"), ("百济神州", "06160·+2.66%")],
+                [("宁德时代", "03750·-11.4%"), ("中国移动", "00941·A/H双杀"), ("泡泡玛特", "09992·-4.8%"), ("福耀玻璃", "03606·特斯拉链")])}
+  {stock_group("上证（主板）", [("数据要素", "政策主线"), ("亨通光电", "600487·激光通信"), ("长飞光纤", "601869·光通信"), ("工商银行", "601398·红利防御")],
+                [("中国移动", "600941·-5.09%"), ("煤炭酿酒", "今日领跌"), ("新易盛", "300502·流出8亿"), ("电池链联动", "宁德事件")])}
+  {stock_group("创业板", [("ASIC芯片", "+2.54%逆势"), ("利亚德", "300296·观察"), ("激光通信", "MCP/电子布"), ("创业板ETF", "成交破百亿")],
+                [("宁德时代", "300750·-12.03%"), ("固态电池", "钠电/六氟"), ("新易盛", "300502"), ("阳光电源", "300274·流出6.9亿")])}
+  <div class="note">今日调整是结构性而非系统性——指数跌幅有限但电池链单点爆破，科创50逆势翻红+ETF放量承接显示资金“弃旧迎新”；明日看宁德止跌信号、早盘量能与今夜特斯拉/Meta财报</div>
 </section>''')
 
 screens.append('''
@@ -286,7 +286,7 @@ screens.append('''
     <div class="disc-t">⚠ 免责声明</div>
     <div class="disc-b">本页面由 <b>AI 自动生成</b>，所有信息整理自公开渠道，仅供信息参考，<b>不构成投资建议</b>。市场有风险，投资需谨慎，决策请独立判断。</div>
   </div>
-  <div class="end-src">数据来源：新华财经 · 金融界 · 中证指数公司 · 证券时报 · 澎湃新闻 · 财联社 · 环球市场播报 · 同花顺 · 东方财富 等公开报道<br>生成时间：2026-10-20 早间（周二版）</div>
+  <div class="end-src">数据来源：新华财经 · 中财网 · 同花顺 · 东方财富 · 证券时报 · 新华社 · 财联社 · 金投网 等公开报道<br>生成时间：2026-10-21 晚间（周三版）</div>
 </section>''')
 
 dots = "".join('<i class="dot" data-i="%d"></i>' % i for i in range(len(screens)))
@@ -421,7 +421,7 @@ html = (
     '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n<meta charset="UTF-8">\n'
     '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
     '<meta name="theme-color" content="#070a14">\n'
-    '<title>每日行情速览 · 2026-10-20</title>\n<style>' + CSS + '</style>\n</head>\n<body>\n'
+    '<title>每日行情速览 · 2026-10-21</title>\n<style>' + CSS + '</style>\n</head>\n<body>\n'
     '<div class="reel" id="reel">' + "".join(screens) + '</div>\n'
     '<nav class="dots" id="dots">' + dots + '</nav>\n'
     '<script>' + JS + '</script>\n</body>\n</html>'
