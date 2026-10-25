@@ -1,64 +1,70 @@
-# GitHub 归档规范（2026-10-21 用户定稿）
-
-> 变更：产出**不再**入网盘/WorkBuddy 项目文件夹，统一归档到 GitHub 仓库。网盘文件保留不删，但不再作为归档路径。
-
-## 仓库与目录结构
+# GitHub归档与推送规范（2026-10-26）
 
 仓库：`feifeiwang/stock-daily-report`
 
-```
+## 目录结构
+
+```text
 <仓库根>/
-├── SKILL.md / README.md / references/ / scripts/   # skill 本体
-├── 预测经验跟踪.xlsx                                 # 经验库（每次预测前必读，见 excel-spec.md）
-└── 2026/                                            # 按年份
-    └── 10/                                          # 按月份（两位数，含前导 0）
-        ├── 2026-10-21.md                            # 当日日报（1 个 MD）
-        ├── 2026-10-21_1.jpg                         # 图1 预测复盘 + 准确率
-        ├── 2026-10-21_2.jpg                         # 图2 昨日要闻
-        └── 2026-10-21_3.jpg                         # 图3 今日预测
+├── SKILL.md / README.md / references/ / scripts/
+├── 股票预测/
+│   ├── 股票预测总表.xlsx
+│   └── 202610/
+│       ├── 2026-10-26.md
+│       ├── 2026-10-26_1.jpg
+│       ├── 2026-10-26_2.jpg
+│       └── 2026-10-26_3.jpg
+├── 预测经验跟踪.xlsx          # 旧版兼容，只读保留
+└── 2026/10/                   # 旧版历史归档，只读保留
 ```
 
 规则：
-- 目录名 `YYYY/MM`，MM 必须是两位数（`04` 不是 `4`）。
-- 每期**只归档 4 个文件**：1 个 MD + 3 张图（长图 `{日期}.png` 与 HTML **不归档**）。
-- 图片**一律 JPG**（PNG 占空间大，用户明确要求）。用 `scripts/to_jpg.py` 从 PNG 转换，不要直接把 PNG 推上去。
-- 历史日期回填：把已生成的 MD/PNG 转成 JPG 后按同一结构上传；没有文件的日期跳过，不补造。
 
-## 推送方式：Contents API 逐文件 PUT（不用 git push）
+- 新月份目录使用 `YYYYMM` 六位格式，例如 `202610`。
+- 每期只归档1个MD和3张JPG；HTML、长图和PNG不归档。
+- 总表固定为 `股票预测/股票预测总表.xlsx`，每个执行日追加一行。
+- 已生成日期不重做；缺失历史文件不补造。
 
-本地 git 仓库与远程历史**无共同祖先**（曾多次 force/re-init），`git push` 会失败。统一走 GitHub Contents API：
+## 正常推送流程
 
+1. 从远程仓库干净克隆，确保本地与远程有共同历史。
+2. 凭据只从环境变量读取；克隆完成后把远程URL恢复为无凭据的HTTPS地址。
+3. 生成并校验文件。
+4. `git add`、创建新提交、推送当前分支。
+5. 推送后读取远程HEAD或文件清单，确认提交和产物已存在。
+
+> 禁止把Token写进仓库文件、脚本、MD、Excel、命令日志或Git远程URL。临时凭据只能放仓库外，权限设为600，推送完成后删除。
+
+## Contents API降级方案
+
+只有正常git推送因远程历史异常而不可用时，才使用GitHub Contents API：
+
+```text
+GET /repos/{owner}/{repo}/contents/{path}  -> 已存在时取sha
+PUT /repos/{owner}/{repo}/contents/{path}  -> message + base64(content) + 可选sha
 ```
-GET  https://api.github.com/repos/{owner}/{repo}/contents/{path}      -> 取 sha
-PUT  https://api.github.com/repos/{owner}/{repo}/contents/{path}      -> body: {message, content(base64), sha}
-```
 
-- 鉴权 header：`Authorization: token {TOKEN}`、`Accept: application/vnd.github+json`、`X-GitHub-Api-Version: 2022-11-28`
-- 文本文件：读 bytes → base64 → 放 `content`
-- 二进制（xlsx/jpg）：同样 base64（GitHub Contents API 支持二进制 base64）
-- **新建目录不需要单独建**：PUT 文件到 `2026/10/xxx.jpg` 时路径会自动创建；目录里已有同名文件必须带 `sha` 覆盖，否则 422。
-- **必须串行**：一个文件 PUT 完再下一个，并行会撞 API 限流/冲突。
+- 新建文件不带sha，覆盖文件必须带当前sha。
+- 文本、XLSX和JPG都按字节做base64。
+- 必须串行PUT，避免分支更新冲突。
+- 每个文件上传后再次GET，核对远程size。
 
-参考脚本：`/tmp/api_update.py`（仓库内不落 token，token 走环境变量 `GH_TOKEN`）。
+## 每期提交清单
 
-## 每期推送清单（Step 8）
+| 路径 | 频次 |
+|---|---|
+| `股票预测/股票预测总表.xlsx` | 每期 |
+| `股票预测/YYYYMM/{日期}.md` | 每期 |
+| `股票预测/YYYYMM/{日期}_1.jpg` | 每期 |
+| `股票预测/YYYYMM/{日期}_2.jpg` | 每期 |
+| `股票预测/YYYYMM/{日期}_3.jpg` | 每期 |
+| `SKILL.md`、`README.md`、`references/*`、`scripts/*` | 有变更时 |
 
-| 序 | 路径 | 类型 | 备注 |
-|---|---|---|---|
-| 1 | `SKILL.md` | 文本 | skill 变更时 |
-| 2 | `README.md` | 文本 | skill 变更时 |
-| 3 | `references/*.md` | 文本 | 变更的才推 |
-| 4 | `scripts/*.py` | 文本 | 变更的才推 |
-| 5 | `预测经验跟踪.xlsx` | 二进制 | 每期都更新（追加一行 + 回填上一日判定） |
-| 6 | `YYYY/MM/{日期}.md` | 文本 | 每期 |
-| 7 | `YYYY/MM/{日期}_1.jpg` | 二进制 | 每期 |
-| 8 | `YYYY/MM/{日期}_2.jpg` | 二进制 | 每期 |
-| 9 | `YYYY/MM/{日期}_3.jpg` | 二进制 | 每期 |
+## 提交前检查
 
-推完**必须远程回验**：对每个路径再 GET 一次，核对 `size` 与本地一致（JPG 可另下载比对 MD5）。
-
-## 归档前置检查
-
-1. 经验 Excel 已读（Step 1 之前）——不允许不读就预测。
-2. 三张图已转 JPG 且体积正常（单张通常 150~400KB；>800KB 说明 quality 需要下调或图太花）。
-3. MD 中的区间已符合新规（宽度 ≤ 昨收 1%），且图3 百分比由数值实时算出。
+1. 上证与中国香港市场并非同日均休市。
+2. 总表已读、上一交易日结果已回填、当日日期无重复。
+3. MD数据有来源；开盘与收盘判定分开。
+4. 三张图为1080×1920 JPG，测高通过；仓库中无当日PNG。
+5. 收盘区间宽度≤昨收1%，日内区间宽度≤1.5个百分点且包含收盘区间。
+6. `git diff --cached` 不含凭据、临时文件或构建目录。
