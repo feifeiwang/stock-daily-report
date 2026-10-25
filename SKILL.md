@@ -1,107 +1,102 @@
 ---
 name: stock-daily-report
-description: 每日早晨自动检查上证与中国香港股市交易日；只要任一市场开市，就生成当日开盘走势预测、前一交易日复盘、1份Markdown和3张1080×1920竖版JPG，并更新股票预测总表后归档到GitHub的股票预测/YYYYMM目录。若两地同日均休市则跳过，不新增文件。
+description: 每个交易日早晨自动预测上证/创业板/恒生/恒生科技的当日开盘走势（含收盘与日内区间），产出 1 份 MD + 3 张 1080×1920 竖版 JPG，并把当日小结写进「股票预测总表.xlsx」，全部提交到 GitHub 仓库的 股票预测/YYYYMM/ 目录。两地（A股与港股）同日均休市时跳过、不产生任何文件。当用户提到"今日股市预测/开盘预测/每日行情汇报/复盘昨天预测/更新股票预测总表"时使用。
 ---
 
 # 每日股市开盘预测（stock-daily-report）
 
-## 固定产出
+## 一句话流程
 
-每个执行日生成并提交：
+```
+交易日检查 → 拉取仓库最新（gh_sync pull）→ 读总表最近几行（含上期结论）
+→ 采集核实 → 写 MD → 改 templates/day_template.json → build_charts 出 3 张 JPG
+→ append_row 写总表（顺带回填上一日结果）→ gh_sync push + 回验 → present_files
+```
 
-1. `股票预测/股票预测总表.xlsx`：累计总表，每个执行日一行，简记当日四指数开盘预测、上一交易日验证结果、核心依据和产物路径。
-2. `股票预测/YYYYMM/YYYY-MM-DD.md`：当日报告。
-3. `股票预测/YYYYMM/YYYY-MM-DD_1.jpg`：上一交易日预测复盘。
-4. `股票预测/YYYYMM/YYYY-MM-DD_2.jpg`：盘前关键要闻。
-5. `股票预测/YYYYMM/YYYY-MM-DD_3.jpg`：今日开盘与日内预测。
+## 产出与归档（结构固定，勿改）
 
-> `YYYYMM` 采用六位月份格式，例如 `202610`。目录已存在时直接复用，不重复创建。旧版 `YYYY/MM/` 归档只读保留，不再继续写入。
+```text
+feifeiwang/stock-daily-report
+├── 股票预测/
+│   ├── 股票预测总表.xlsx          # 每日一行的小结表（累计）
+│   └── 202610/                    # 六位月份目录，存在即复用
+│       ├── 2026-10-27.md
+│       ├── 2026-10-27_1.jpg       # 图1：上一开盘日预测复盘
+│       ├── 2026-10-27_2.jpg       # 图2：盘前要闻
+│       └── 2026-10-27_3.jpg       # 图3：今日开盘与日内预测
+├── scripts/                       # 可执行工具（build_charts / append_row / gh_sync / holidays …）
+├── templates/                     # day_template.json + DATA-SCHEMA.md + 总表母版
+└── references/                    # md-template / excel-spec / pitfalls / runbook（经验台账）
+```
 
-## 无人值守执行规则
+- 每期**只归档 1 MD + 3 JPG**，不归档 PNG/HTML/长图。
+- 工作目录用 `/workspace/stock-daily-report-tool/work/{日期}/`（仓库外），仓库目录只放要提交的东西。
 
-- 每天早晨先检查**上海证券交易所**与**中国香港证券市场**是否交易。
-- **仅当两地同日都不开盘时跳过整个任务**：不抓行情、不生成报告、不更新Excel、不提交GitHub。
-- 只要任一市场开市就继续执行；休市市场在MD中注明，另一市场仍正常预测。
-- 日历来源出现冲突时，不依赖单一第三方页面；至少用交易所/指数公司信息、当日盘前报道或上市公司日志交叉验证。
-- 无人值守时不提问；数据缺失则使用保守区间，并在MD中明确缺失项和假设。
+## 无人值守规则
 
-## 每日流程
+1. **先判交易日**：`python3 scripts/holidays.py`。输出含 `SKIP:` 才结束（两地同休），否则继续；单市场休市时在 MD 里注明，另一市场照常预测。
+2. 已存在的日期不重做：`gh_sync.py pull` 后检查 `股票预测/YYYYMM/{日期}.md` 与总表 B 列。
+3. 不提问、不中断；缺数据就用保守区间并在 MD「数据来源/假设」里写明。
+4. 任一步失败：记录原因，继续能独立完成的步骤，最终总结如实报告，**不静默跳过**。
 
-| # | 步骤 | 动作 |
+## 每日执行清单
+
+| # | 步骤 | 命令 / 要点 |
 |---|---|---|
-| 0 | 交易日检查 | 核验上证与中国香港市场；两地均休市则结束 |
-| 1 | 防重复 | 检查 `股票预测/YYYYMM/YYYY-MM-DD.md` 与总表日期；已存在则不重做 |
-| 2 | 读历史 | 先读 `股票预测/股票预测总表.xlsx` 最近记录和失败原因；旧版经验可补读根目录 `预测经验跟踪.xlsx` |
-| 3 | 采集核实 | 多源采集前一交易日A股、中国香港股市、美股收盘、盘前期指、商品、资金面和要闻；数字必须可追溯 |
-| 4 | 预测 | **开盘方向和开盘区间优先**；另给收盘区间、日内区间、板块与个股观察 |
-| 5 | 复盘 | 开盘与收盘分开判定；回填上一交易日结果、失败原因和本期调整动作 |
-| 6 | 写MD | 按 `references/md-template.md` 生成当日报告，列出完整来源链接 |
-| 7 | 更新Excel | 总表追加当日一行，并写入上一交易日预测结果和四个产物相对路径 |
-| 8 | 生成三图 | 只改 `scripts/gen3_images.py` 顶部 `D` 数据区；模板函数和CSS不动 |
-| 9 | 质量检查 | `measure_heights.py` 测高；PNG转JPG；仓库中不保留当日PNG |
-| 10 | 提交GitHub | 从远程仓库干净克隆后提交并推送；推后读取远程HEAD或文件清单回验 |
+| 0 | 建工作区 | `mkdir -p work/{日期}`；`cp -r <仓库>/scripts <仓库>/templates work/{日期}/` |
+| 1 | 拉最新 | `GH_TOKEN=... python3 work/{日期}/scripts/gh_sync.py pull --repo-dir <仓库目录>`（勿用 git，见 runbook A1） |
+| 2 | 读历史 | 读 `股票预测/股票预测总表.xlsx` 最后 5 行 + `references/runbook.md`，确定"本期调整要点" |
+| 3 | 采集 | WebSearch/WebFetch：前一交易日 A股/港股/美股收盘（指数/成交额/涨跌家数/板块/个股）、资金面、隔夜到今早要闻；≥2 源交叉，禁杜撰 |
+| 4 | 写 MD | 按 `references/md-template.md`，一次 Write 到 `work/{日期}/{日期}.md`；**开盘区间是第一等公民**，收盘/日内作辅助 |
+| 5 | 填数据 | `cp templates/day_template.json work/{日期}/day.json`，只改值；字段含义见 `templates/DATA-SCHEMA.md` |
+| 6 | 出三图 | `python3 work/{日期}/scripts/build_charts.py --data work/{日期}/day.json --out work/{日期}/` → 产出 3 张 1080×1920 JPG（含区间硬校验 + 测高） |
+| 7 | 写总表 | `python3 scripts/append_row.py --repo <仓库> --data work/{日期}/day.json --prev-result "上一日：开盘x/4；收盘y/4；综合n/6"` |
+| 8 | 归档 | 把 MD + 3 JPG 复制到 `<仓库>/股票预测/{YYYYMM}/` |
+| 9 | 推送 | `gh_sync.py push --msg "report: {日期}" <5 个相对路径> ...`（自带 md5 回验） |
+| 10 | 展示 | present_files 三张 JPG；文字给四指数开盘/收盘区间结论 + 落点 + 失败项 |
 
-## 预测与复盘口径
+## 预测口径（用户定稿，违反即返工）
 
-### 开盘优先
+1. **开盘优先**：四指数（上证、创业板、恒指、恒生科技）必报，每项给「开盘方向 + 开盘区间 + 置信度 + 首要变量」。
+2. 收盘区间宽度 ≤ 昨收 ×1.0%；全天波动宽度 ≤1.5pct 且必须完整包含开盘与收盘区间。宽区间=无意义，脚本会直接拒绝渲染。
+3. 恒生科技每次必报；美股只作背景，**不给美股操作建议**（建议只覆盖港股/上证/创业板）。
+4. 涨跌幅一律由数值实时计算（`_p()`），禁手填百分比字符串。
+5. **开盘与收盘分开验证**，不能用开盘命中替代全天命中；总表状态写"开盘 x/4、收盘 y/4、综合 n/6"。
+6. 三图/HTML 副标题一律中性（只写"上一开盘日 · 日期 星期"），休市/节后首开等措辞只进 MD 正文。
+7. 关键数字用白 `#e9edf6` 或金 `#f5c542`，禁暗灰；涨 `#f6465d`、跌 `#0ecb81`；每张图底部固定"AI预测，仅供参考，不构成投资建议"。
+8. 已生成日期不重做；所有数字可溯源；图片一律 JPG。
 
-四项必报：
+## 模板固化边界（"改数字就能出图"）
 
-- 上证指数
-- 创业板指
-- 恒生指数
-- 恒生科技指数
+- **只改 `templates/day_template.json`**（或它的副本）：119 个字段，按 图1/图2/图3 分组并带中文注释。
+- **禁改**：`scripts/templates/gen3_images.tpl.py`（CSS/track/donut/main）、`scripts/build_charts.py` 的校验与测高逻辑、图卡结构。
+- 图1 的涨跌颜色与 ▲▼ **不要手写**：脚本由 `{指数}_PCT` 正负自动决定（历史坑：写死 up 会让跌的指数标红）。
+- 文案超长会溢出页脚：长度红线见 `templates/DATA-SCHEMA.md` 第 10 节，改了长文案就重跑 build_charts（它自带测高门禁）。
 
-每项必须给：
+## 脚本清单
 
-- 开盘方向：高开 / 低开 / 平开附近；
-- 数值区间与相对昨收百分比；
-- 置信度；
-- 影响开盘的首要变量。
-
-### 收盘与日内补充
-
-- 收盘区间宽度 `最高 - 最低 ≤ 昨收 × 1.0%`。
-- 日内区间宽度 ≤ 1.5个百分点，且完整包含开盘区间与收盘区间。
-- 图3轨道统一使用昨收±2%，百分比由数值实时计算，禁止手填。
-- 恒生科技每日必报；美股仅作背景，不给美股操作建议。
-
-### 分开验证
-
-- **开盘判定**：实际开盘方向与预测一致，且实际开盘落入区间，记为准确；方向一致但超区间，记为部分准确；方向相反，记为不准确。
-- **收盘判定**：实际收盘方向与区间分别核验，不得用开盘命中替代收盘命中。
-- 旧版六项制继续保留：大盘4项 + 板块1项 + 个股1项；准确=1、部分准确=0.5、不准确=0。
-
-## 模板固化边界
-
-- `scripts/gen3_images.py`：每日只改顶部 `D` 字典中的日期、复盘、新闻和预测数值。`track()`、`donut()`、卡片函数和CSS为固化模板，除非用户提出新的展示字段，否则不改骨架。
-- `references/md-template.md`：MD结构模板；交易日检查、开盘预测表、上一日开盘/收盘分开复盘为必填模块。
-- `股票预测/股票预测总表.xlsx`：累计记录模板；每行简记，不把整篇分析塞入单元格。
-- 图片固定1080×1920、JPG；涨红 `#f6465d`、跌绿 `#0ecb81`、金色 `#f5c542`、深底 `#070a14`。
-- 关键数字使用白色或金色，禁用暗灰色承载关键数值。
-- 每张图底部固定“AI预测，仅供参考，不构成投资建议”。
-
-## GitHub与凭据安全
-
-- Token只通过环境变量读取，禁止写入仓库、脚本、日志、MD、Excel或Git远程地址。
-- 克隆后将远程地址保持为无凭据的 `https://github.com/feifeiwang/stock-daily-report.git`。
-- 优先使用正常 `git add/commit/push`；仅在远程历史异常且无法正常推送时，才按 `references/github-push.md` 的Contents API方案处理。
-- 推送失败必须记录具体原因和解决方法到 `references/pitfalls.md`，下次执行前先读。
-
-## 2026-10-26新增经验
-
-1. 开盘与收盘必须分开验证：10月23日上证与创业板低开预测命中，但午后强V反转使收盘预测全部失效。
-2. ETF承接、主动ETF发行和主线板块共振可造成大幅日内反转；不能仅凭隔夜科技跌幅线性外推全天收盘。
-3. 中国香港市场假日日历的第三方页面可能互相矛盾；跳过条件是“两地均休市”，因此必须先确认上证市场，再交叉核验中国香港市场。
-4. GitHub连接器授权若返回404，可改用用户授权的PAT环境变量；凭据文件仅可临时存放在仓库外，推送后立即删除。
-5. 归档目录已改为 `股票预测/YYYYMM/`，总表固定为 `股票预测/股票预测总表.xlsx`，后续不要再写旧版 `YYYY/MM/`。
+| 脚本 | 用途 |
+|---|---|
+| `scripts/gh_sync.py` | 拉取/推送/回验仓库（HTTPS API，不依赖 git，中文路径已编码） |
+| `scripts/holidays.py` | A股/港股交易日判定（动态 + 静态兜底），打印 `SKIP:` 表示两地同休 |
+| `scripts/build_charts.py` | day.json → 三张 JPG（区间校验 → 渲染 → 测高 → 转 JPG） |
+| `scripts/append_row.py` | 总表追加当日行 + 回填上一日结果 + 查重 |
+| `scripts/templates/gen3_images.tpl.py` | 三图骨架（禁改） |
+| `scripts/templates/gen3_images.data.py` | 三图数据区模板（`{{占位符}}`） |
+| `scripts/measure_heights.py` | 屏高实测（build_charts 内部调用） |
+| `scripts/to_jpg.py` | 单独把 PNG 转 JPG（备用） |
+| `templates/build_master_xlsx.py` | 总表结构母版（总表损坏时重建） |
 
 ## 参考文件
 
-- `references/md-template.md`：MD日报模板
-- `references/excel-spec.md`：总表与验证口径
-- `references/pitfalls.md`：历史踩坑与修复方法
-- `references/github-push.md`：GitHub推送与回验方案
-- `scripts/gen3_images.py`：三图模板
-- `scripts/measure_heights.py`：页面高度门禁
-- `scripts/to_jpg.py`：PNG转JPG
+- `references/runbook.md` — **经验台账：固化坑清单 + 模板脚本清单 + 每次运行日志（运行前必读、运行后必写）**
+- `references/md-template.md` — MD 日报结构
+- `references/excel-spec.md` — 总表字段口径
+- `references/pitfalls.md` — 历史踩坑全量（含配色/尺寸/措辞红线）
+- `references/github-push.md` — 推送协议（现以 `scripts/gh_sync.py` 为准）
+
+## 每次运行结束必做（自迭代）
+
+1. 把本次遇到的问题写进 `references/runbook.md` 的「运行日志」（日期 + 现象 + 根因 + 已落地修正）。
+2. 可复用的修正固化成模板/脚本（放进 `scripts/`、`templates/`），并把 `SKILL.md` 对应条目更新。
+3. 这些 Skill 文件改动一并 `gh_sync.py push`（`SKILL.md`、`references/*`、`scripts/*`、`templates/*`）。
