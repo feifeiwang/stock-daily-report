@@ -1,3 +1,4 @@
 __pycache__/
 *.pyc
-shot_*.png
+*.png
+股票预测/.股票预测总表.ref/
