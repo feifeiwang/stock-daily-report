@@ -44,13 +44,13 @@ feifeiwang/stock-daily-report
 | # | 步骤 | 命令 / 要点 |
 |---|---|---|
 | 0 | 建工作区 | `mkdir -p work/{日期}`；`cp -r <仓库>/scripts <仓库>/templates work/{日期}/` |
-| 1 | 拉最新 | `GH_TOKEN=... python3 work/{日期}/scripts/gh_sync.py pull --repo-dir <仓库目录>`（勿用 git，见 runbook A1） |
-| 2 | 读历史 | 读 `股票预测/股票预测总表.xlsx` 最后 5 行 + `references/runbook.md`，确定"本期调整要点" |
-| 3 | 采集 | WebSearch/WebFetch：前一交易日 A股/港股/美股收盘（指数/成交额/涨跌家数/板块/个股）、资金面、隔夜到今早要闻；≥2 源交叉，禁杜撰 |
+| 1 | 拉最新 | `git clone https://github.com/feifeiwang/stock-daily-report.git /tmp/stockrepo`（秒级）；失败则回退 `GH_TOKEN=... python3 scripts/gh_sync.py pull --repo-dir <仓库目录>` |
+| 2 | 读历史 | 读 `股票预测/股票预测总表.xlsx` 最后 5 行（含第14列「收盘前预测下一交易日」）+ `references/runbook.md`，确定"本期调整要点" |
+| 3 | 采集 | **优先搜"当日早报"**（金十/东财/同花顺财经早餐），一篇拿到前一日收盘+隔夜美股+当日要闻；点位用精确数字反查复核；≥2 源交叉，禁杜撰。详见 runbook A16 |
 | 4 | 写 MD | 按 `references/md-template.md`，一次 Write 到 `work/{日期}/{日期}.md`；**开盘区间是第一等公民**，收盘/日内作辅助 |
-| 5 | 填数据 | `cp templates/day_template.json work/{日期}/day.json`，只改值；字段含义见 `templates/DATA-SCHEMA.md` |
-| 6 | 出三图 | `python3 work/{日期}/scripts/build_charts.py --data work/{日期}/day.json --out work/{日期}/` → 产出 3 张 1080×1920 JPG（含区间硬校验 + 测高） |
-| 7 | 写总表 | `python3 scripts/append_row.py --repo <仓库> --data work/{日期}/day.json --prev-result "上一日：开盘x/4；收盘y/4；综合n/6"` |
+| 5 | 填数据 | `cp templates/day_template.json work/{日期}/day.json`，**只改值、不加键**（`XLSX_*` 绝不进 day.json，见 runbook A15） |
+| 6 | 出三图 | `python3 work/{日期}/scripts/build_charts.py --data work/{日期}/day.json --out work/{日期}/` → 3 张 1080×1920 JPG（含区间硬校验 + 测高）；出图后**抽查图1配色，疑点先裁剪放大再改模板**（runbook A18） |
+| 7 | 写总表 | `python3 scripts/append_row.py --repo <仓库> --data work/{日期}/day.json --prev-result "上一日：开盘x/4；收盘y/4；综合n/6"`；再补写第14列「收盘前预测下一交易日」占位（`vertical='top'` 字符串，别用未导入的常量） |
 | 8 | 归档 | 把 MD + 3 JPG 复制到 `<仓库>/股票预测/{YYYYMM}/` |
 | 9 | 推送 | `gh_sync.py push --msg "report: {日期}" <5 个相对路径> ...`（自带 md5 回验） |
 | 10 | 展示 | present_files 三张 JPG；文字给四指数开盘/收盘区间结论 + 落点 + 失败项 |
@@ -72,6 +72,8 @@ feifeiwang/stock-daily-report
 - **禁改**：`scripts/templates/gen3_images.tpl.py`（CSS/track/donut/main）、`scripts/build_charts.py` 的校验与测高逻辑、图卡结构。
 - 图1 的涨跌颜色与 ▲▼ **不要手写**：脚本由 `{指数}_PCT` 正负自动决定（历史坑：写死 up 会让跌的指数标红）。
 - 文案超长会溢出页脚：长度红线见 `templates/DATA-SCHEMA.md` 第 10 节，改了长文案就重跑 build_charts（它自带测高门禁）。
+- **`day.json` 的键集是封闭的**：多一个键（尤其 `XLSX_*`）脚本立刻拒绝渲染。总表相关的三个字段不属于 day.json，用命令行参数或事后补写 xlsx。
+- **总表第 14 列「收盘前预测下一交易日」**：当日早晨只写占位（列出今晨已锁定的四指数区间），真正的收盘前预判需在 14:30 前后另有流程填写。
 
 ## 脚本清单
 
