@@ -45,12 +45,12 @@ D = {
     "badge": "{{NEWS_COUNT}} 条精选",
     # (标题, 正文)；标题里用 <span class="hl">强调数字</span>，正文用 <b>
     "news": [
-      ('{{NEWS1_T}}', "{{NEWS1_D}}"),
-      ('{{NEWS2_T}}', "{{NEWS2_D}}"),
-      ('{{NEWS3_T}}', "{{NEWS3_D}}"),
-      ('{{NEWS4_T}}', "{{NEWS4_D}}"),
-      ('{{NEWS5_T}}', "{{NEWS5_D}}"),
-      ('{{NEWS6_T}}', "{{NEWS6_D}}"),
+      ('{{NEWS1_T}}', '{{NEWS1_D}}'),
+      ('{{NEWS2_T}}', '{{NEWS2_D}}'),
+      ('{{NEWS3_T}}', '{{NEWS3_D}}'),
+      ('{{NEWS4_T}}', '{{NEWS4_D}}'),
+      ('{{NEWS5_T}}', '{{NEWS5_D}}'),
+      ('{{NEWS6_T}}', '{{NEWS6_D}}'),
     ],
     "other_t": "其他动态",
     # 4~5 条，每条 <li>
