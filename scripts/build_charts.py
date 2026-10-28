@@ -157,6 +157,10 @@ def main():
         if k.endswith("_ACT_SPAN"):
             # 含引号的 HTML，必须按 Python 字面量转义后嵌入（直接替换会破坏语法）
             v = repr(v)[1:-1]  # 只借 repr 做转义，外层引号由模板提供
+        elif any(q in v for q in ('"', "'", "\\")):
+            # A21：值里带引号/反斜杠会截断 Python 字面量（NEWS*_D 曾是双引号包裹）。
+            # 统一做 repr 转义，模板外层一律单引号，等于"值里能放任何引号"。
+            v = repr(v)[1:-1]
         body = body.replace("{{%s}}" % k, v)
     left = re.findall(r"\{\{[A-Z0-9_]+\}\}", body)
     if left:
