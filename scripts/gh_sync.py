@@ -133,7 +133,10 @@ def put_one(path, token, msg, root):
     body = {"message": msg, "content": base64.b64encode(raw).decode(),
             "branch": BRANCH, "committer": {"name": "stock-bot", "email": "stock-bot@users.noreply.github.com"}}
     if cur and "sha" in cur:
-        if cur["size"] == len(raw):
+        # A24：只比 size 会漏推"字节数相同但内容不同"的改动（如把双引号换成单引号），
+        # 必须比 md5 才可靠。
+        remote_md5 = hashlib.md5(base64.b64decode(cur["content"])).hexdigest() if cur.get("content") else None
+        if remote_md5 == hashlib.md5(raw).hexdigest():
             print(f"  [same] {path} 未变化，跳过")
             return True
         body["sha"] = cur["sha"]
