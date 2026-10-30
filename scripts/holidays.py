@@ -199,12 +199,37 @@ def hk_holiday_source(date):
     return None
 
 
+def next_trading_days(start, n=1):
+    """从 start（不含）往后找 n 个"A股或港股至少其一开市"的交易日。
+
+    返回 [(date, sh_bool, hk_bool)]。休市日（周末/节假日）报告里用它回答
+    "下一次真正要跑的日子是哪天"，避免周末空跑时不知道进度。
+    """
+    out = []
+    d = start
+    while len(out) < n:
+        d = d.fromordinal(d.toordinal() + 1)
+        sh, hk = sh_trading_day(d), hk_trading_day(d)
+        if sh or hk:
+            out.append((d, sh, hk))
+    return out
+
+
 if __name__ == "__main__":
-    # CLI: python3 holidays.py [YYYY-MM-DD]（缺省今天，本地时区）
+    # CLI: python3 holidays.py [YYYY-MM-DD] [--next N]（缺省今天，本地时区）
     # 输出: {日期} A股=开市/休市 港股=开市/休市（附半日市与休市原因）
+    #       --next N：额外列出之后 N 个开盘日，便于休市日报告写明"下一开盘日"
     import sys as _sys
     from datetime import date as _date
-    _arg = _sys.argv[1] if len(_sys.argv) > 1 else None
+    _rest = _sys.argv[1:]
+    _n = 0
+    if "--next" in _rest:
+        _i = _rest.index("--next")
+        # --next 后面的数字是它的取值，必须连同参数名一起剔掉，否则会被当成日期
+        _n = int(_rest[_i + 1]) if _i + 1 < len(_rest) and _rest[_i + 1].isdigit() else 1
+        _rest = _rest[:_i] + _rest[_i + 2:]
+    _args = [a for a in _rest if not a.startswith("--")]
+    _arg = _args[0] if _args else None
     _d = _date.fromisoformat(_arg) if _arg else _date.today()
     _sh, _hk = sh_trading_day(_d), hk_trading_day(_d)
     print(f"{_d.isoformat()} A股={'开市' if _sh else '休市'} 港股={'开市' if _hk else '休市'}")
@@ -216,3 +241,10 @@ if __name__ == "__main__":
         print(f"  港股休市原因：{hk_holiday_source(_d) or '非交易日'}")
     if not (_sh or _hk):
         print("SKIP: 今日两地均休市，不执行")
+        if _n == 0:
+            _n = 1
+    if _n:
+        _wd = "一二三四五六日"
+        for _x, _s, _h in next_trading_days(_d, _n):
+            _tag = "A股+港股同开" if (_s and _h) else ("仅A股" if _s else "仅港股")
+            print(f"  下一开盘日 {_x.isoformat()} 星期{_wd[_x.weekday()]}（{_tag}）")
