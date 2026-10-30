@@ -45,7 +45,7 @@ feifeiwang/stock-daily-report
 | # | 步骤 | 命令 / 要点 |
 |---|---|---|
 | 0 | 建工作区 | **先 `git clone` 仓库到 `/tmp/sdr`**（技能本体未持久化，仓库才是活体备份，见 runbook A23）；再从**仓库** `cp -r scripts templates` 到 `work/{日期}/`。**不要依赖 `/root/.codebuddy/skills/` 下的旧副本** |
-| 1 | 拉最新 | `git clone https://github.com/feifeiwang/stock-daily-report.git /tmp/sdr`（秒级）；失败则回退 `GH_TOKEN=... python3 scripts/gh_sync.py pull --repo-dir <仓库目录>` |
+| 1 | 拉最新 | 公开仓库先匿名执行 `git clone https://github.com/feifeiwang/stock-daily-report.git /tmp/sdr`（秒级，不依赖 OAuth）；若 GitHub 连接器取 token 返回 404，**不要阻塞拉取**，继续匿名 clone。仅推送阶段加载授权 token 到环境变量；失败则按 A25 记录并如实报告 |
 | 2 | 读历史 | 读 `股票预测/股票预测总表.xlsx` 最后 5 行（含第14列「收盘前预测下一交易日」）+ `references/runbook.md`，确定"本期调整要点" |
 | 3 | 采集 | **优先搜"当日早报"**（金十/东财/同花顺财经早餐），一篇拿到前一日收盘+隔夜美股+当日要闻；点位用精确数字反查复核；≥2 源交叉，禁杜撰。详见 runbook A16 |
 | 3b | 拿开盘价 | **不用逐个反查**：搜《A股三大指数集体高开》类快讯，一篇同时给 A股 + 港股的高开涨跌幅，用 `昨收×(1+涨跌幅)` 反推（误差 <0.01）。见 runbook 2026-10-29 日志 |
