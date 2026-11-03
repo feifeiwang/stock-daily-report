@@ -66,16 +66,16 @@ feifeiwang/stock-daily-report
 
 | # | 步骤 | 命令 / 要点 |
 |---|---|---|
-| 0 | 建工作区 | **先 `git clone` 仓库到 `/tmp/sdr`**（技能本体不保证持久化，仓库才是活体备份，见 runbook A23）；再从**仓库** `cp -r scripts templates` 到 `work/{日期}/`。**不要依赖 `/root/.codebuddy/skills/` 下的旧副本**。clone 完成后顺手 `cp -r SKILL.md references scripts templates /root/.codebuddy/skills/stock-daily-forecast/` 让本轮会话能按名加载（A32） |
+| 0 | 建工作区 | **先 `git clone` 仓库到 `/tmp/sdr`**（技能本体不保证持久化，仓库才是活体备份，见 runbook A23）；再从**仓库** `cp -r scripts templates` 到 `work/{日期}/`。**不要依赖 `/root/.codebuddy/skills/` 下的旧副本**。clone 完成后顺手 `cp -r SKILL.md references scripts templates /root/.codebuddy/skills/stock-daily-forecast/` 让本轮会话能按名加载（A32）。**无人值守注意（A35）：自动化多次工具调用之间工作目录会重置，跨调用一律写绝对路径（脚本/--data/--repo/--out 全部写全），`cd` 只在同一条命令内有效** |
 | 1 | 拉最新 | 公开仓库先匿名执行 `git clone https://github.com/feifeiwang/stock-daily-report.git /tmp/sdr`（秒级，不依赖 OAuth）；若 GitHub 连接器取 token 返回 404，**不要阻塞拉取**，继续匿名 clone。仅推送阶段加载授权 token 到环境变量；失败则按 A25 记录并如实报告 |
 | 2 | 读历史 | 读 `股票预测/股票预测总表.xlsx` 最后 5 行（含第14列「收盘前预测下一交易日」）+ `references/runbook.md`，确定"本期调整要点" |
 | 3 | 采集 | **优先搜"当日早报"**（金十/东财/同花顺财经早餐），一篇拿到前一日收盘+隔夜美股+当日要闻；点位用精确数字反查复核；≥2 源交叉，禁杜撰。详见 runbook A16。**收盘价只认次日早报/新华社通稿，快讯先看时间戳（A30）**；复盘个股时用 A31 的两条捷径（新华社港股通稿 + 每经沪深A股成交额榜），别逐条搜 |
 | 3b | 拿开盘价 | **不用逐个反查**：搜《A股三大指数集体高开》类快讯，一篇同时给 A股 + 港股的高开涨跌幅，用 `昨收×(1+涨跌幅)` 反推（误差 <0.01）。见 runbook 2026-10-29 日志 |
 | 4 | 写 MD | 按 `references/md-template.md`，一次 Write 到 `work/{日期}/{日期}.md`；**开盘区间是第一等公民**，收盘/日内作辅助 |
-| 5 | 填数据 | `cp templates/day_template.json work/{日期}/day.json`，**只改值、不加键**（`XLSX_*` 绝不进 day.json，见 runbook A15）。**出图前跑引号自检**（A21）：值里可含任意引号，但 `NEWS*_D` 历史上是双引号包裹，已修 |
+| 5 | 填数据 | `cp templates/day_template.json work/{日期}/day.json`，**只改值、不加键**（`XLSX_*` 绝不进 day.json，见 runbook A15）。**day.json 双阶段（A33）**：本步骤的 day.json 保持 119 图用键 → 出图；**出图成功后**再向同一 day.json 注入 `XLSX_PREV_RESULT/XLSX_BASIS/XLSX_STATUS` 供步骤 7 的 append_row 使用（append_row 不校验键集，build_charts 才校验）。**出图前跑引号自检**（A21）：值里可含任意引号，但 `NEWS*_D` 历史上是双引号包裹，已修 |
 | 5b | 复盘判定 | `{p}_TAG`（决定颜色）与 `{p}_TAG_TXT`（显示文案）**必须成对改**，否则出现"文案=部分、颜色=准确"。四项全准才 `tag-ok`（A22） |
 | 6 | 出三图 | `python3 work/{日期}/scripts/build_charts.py --data work/{日期}/day.json --out work/{日期}/` → 3 张 1080×1920 JPG（含区间硬校验 + 测高）；出图后**抽查图1配色，疑点先裁剪放大再改模板**（runbook A18）。**测高失败看行数不看字数**：brief 4 条总行数 ≈7 行是图1 的硬预算（A19）；区间排序按"收盘→开盘→全天"（开盘区间也有 ≤1% 隐性校验，A20） |
-| 7 | 写总表 | `python3 scripts/append_row.py --repo <仓库> --data work/{日期}/day.json --prev-result "上一日：开盘x/4；收盘y/4；综合n/6"`；再补写第14列「收盘前预测下一交易日」占位（`vertical='top'` 字符串，别用未导入的常量） |
+| 7 | 写总表 | day.json 注入 `XLSX_*` 后：`python3 scripts/append_row.py --repo <仓库> --data work/{日期}/day.json --prev-result "上一日：开盘x/4；收盘y/4；综合n/6"`（**2026-11-04 起 `--prev-result` 只回填上一行 M 列状态、不再覆写上一行 G 列**——G 列语义是"该行自己的上一交易日结果"，新行 G 列由 `XLSX_PREV_RESULT` 提供，见 A34）；再补写第14列「收盘前预测下一交易日」占位（`vertical='top'` 字符串，别用未导入的常量） |
 | 8 | 归档 | 把 MD + 3 JPG 复制到 `<仓库>/股票预测/{YYYYMM}/` |
 | 9 | 推送 | `gh_sync.py push --msg "report: {日期}" <5 个相对路径> ...`（自带 md5 回验） |
 | 10 | 展示 | present_files 三张 JPG；文字给四指数开盘/收盘区间结论 + 落点 + 失败项 |
