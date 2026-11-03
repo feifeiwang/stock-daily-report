@@ -17,7 +17,9 @@ day.json 复用 templates/day_template.json 的字段，另需（可缺省）：
 
 行为：
   - 同日期已存在 → 拒绝追加（防重复），退出码 4
-  - --prev-result 且上一行状态含"待验证" → 回填到上一行 M 列（状态），并在 G 列补结果
+  - --prev-result 且上一行状态含"待验证" → 只回填上一行 M 列（状态）；
+    **G 列保持不动**（G 列语义是"该行自己的上一交易日结果"，整格覆写会丢历史，
+    见 runbook A34）。新行 G 列由 day.json 的 XLSX_PREV_RESULT 提供。
   - 行格式（日期/超链接/底色/底边框）与历史行保持一致
 """
 import argparse
@@ -70,11 +72,13 @@ def main():
     # ---- 回填上一行 ----
     last = ws.max_row
     if a.prev_result and last >= 2 and "待验证" in str(ws.cell(last, 13).value or ""):
-        # G 列写"上一日结果摘要"，M 列状态改为验证摘要（与历史行口径一致）
-        ws.cell(last, 7, a.prev_result)
-        ws.cell(last, 13, f"已验证：{a.prev_result.split('：', 1)[-1]}")
+        # A34：只回填上一行 M 列（状态），**保留 G 列不动**——G 列语义是"该行自己的
+        # 上一交易日结果"，整格覆写会把上一行的历史结果丢掉。新行 G 列由
+        # day.json 的 XLSX_PREV_RESULT 提供。
+        verified = f"已验证：{a.prev_result.split('：', 1)[-1]}"
+        ws.cell(last, 13, verified)
         ws.cell(last, 13).fill = GREEN
-        print(f"  回填上一行（第 {last} 行）：{a.prev_result}")
+        print(f"  回填上一行（第 {last} 行）状态列：{verified}（G 列保持不动）")
 
     # ---- 追加本行 ----
     r = ws.max_row + 1
