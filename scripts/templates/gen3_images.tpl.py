@@ -44,6 +44,10 @@ body{font-family:"Noto Sans CJK SC","Noto Sans SC",sans-serif;-webkit-font-smoot
 .rev-top{display:flex;align-items:center;gap:8px;}
 .rev-name{font-size:13px;font-weight:700;min-width:62px;}
 .rev-act{font-size:12.5px;font-weight:700;}
+/* A38：derive() 只生成 up/down class，旧 CSS 没写颜色 → 涨跌数字一直继承白色。
+   补上中国口径的红涨绿跌；span（▲百分比）继承父级颜色，无需重复定义。 */
+.rev-act.up{color:#f6465d;}
+.rev-act.down{color:#0ecb81;}
 .rev-act span{font-size:10.5px;font-weight:700;margin-left:2px;}
 .rev-tag{margin-left:auto;font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap;}
 .tag-ok{color:#0ecb81;background:rgba(14,203,129,.12);border:1px solid rgba(14,203,129,.4);}
