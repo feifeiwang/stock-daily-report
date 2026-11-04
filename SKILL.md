@@ -39,6 +39,7 @@ feifeiwang/stock-daily-report
 3. 已存在的日期不重做：`gh_sync.py pull` 后检查 `股票预测/YYYYMM/{日期}.md` 与总表 B 列。
 4. 不提问、不中断；缺数据就用保守区间并在 MD「数据来源/假设」里写明。
 5. 任一步失败：记录原因，继续能独立完成的步骤，最终总结如实报告，**不静默跳过**。
+6. **长会话可能被上下文压缩（A37）**：步骤 3 采集完立刻把行情数据落盘到 `work/{日期}/market-data.md`（按 `templates/market-data-notes.md`）；若发现上下文被压缩、具体数字丢失，先 Read 该快照恢复，不要重新联网搜一遍。
 
 ## 休市日标准动作（周末 / 两地同休，必走）
 
@@ -69,7 +70,7 @@ feifeiwang/stock-daily-report
 | 0 | 建工作区 | **先 `git clone` 仓库到 `/tmp/sdr`**（技能本体不保证持久化，仓库才是活体备份，见 runbook A23）；再从**仓库** `cp -r scripts templates` 到 `work/{日期}/`。**不要依赖 `/root/.codebuddy/skills/` 下的旧副本**。clone 完成后顺手 `cp -r SKILL.md references scripts templates /root/.codebuddy/skills/stock-daily-forecast/` 让本轮会话能按名加载（A32）。**无人值守注意（A35）：自动化多次工具调用之间工作目录会重置，跨调用一律写绝对路径（脚本/--data/--repo/--out 全部写全），`cd` 只在同一条命令内有效** |
 | 1 | 拉最新 | 公开仓库先匿名执行 `git clone https://github.com/feifeiwang/stock-daily-report.git /tmp/sdr`（秒级，不依赖 OAuth）；若 GitHub 连接器取 token 返回 404，**不要阻塞拉取**，继续匿名 clone。仅推送阶段加载授权 token 到环境变量；失败则按 A25 记录并如实报告 |
 | 2 | 读历史 | 读 `股票预测/股票预测总表.xlsx` 最后 5 行（含第14列「收盘前预测下一交易日」）+ `references/runbook.md`，确定"本期调整要点" |
-| 3 | 采集 | **优先搜"当日早报"**（金十/东财/同花顺财经早餐），一篇拿到前一日收盘+隔夜美股+当日要闻；点位用精确数字反查复核；≥2 源交叉，禁杜撰。详见 runbook A16。**收盘价只认次日早报/新华社通稿，快讯先看时间戳（A30）**；复盘个股时用 A31 的两条捷径（新华社港股通稿 + 每经沪深A股成交额榜），别逐条搜 |
+| 3 | 采集 | **优先搜"当日早报"**（金十/东财/同花顺财经早餐），一篇拿到前一日收盘+隔夜美股+当日要闻；点位用精确数字反查复核；≥2 源交叉，禁杜撰。详见 runbook A16。**收盘价只认次日早报/新华社通稿，快讯先看时间戳（A30）**；复盘个股时用 A31 的两条捷径（新华社港股通稿 + 每经沪深A股成交额榜），别逐条搜；**采集完立刻落盘 `work/{日期}/market-data.md`（A37，压缩后可恢复）** |
 | 3b | 拿开盘价 | **不用逐个反查**：搜《A股三大指数集体高开》类快讯，一篇同时给 A股 + 港股的高开涨跌幅，用 `昨收×(1+涨跌幅)` 反推（误差 <0.01）。见 runbook 2026-10-29 日志 |
 | 4 | 写 MD | 按 `references/md-template.md`，一次 Write 到 `work/{日期}/{日期}.md`；**开盘区间是第一等公民**，收盘/日内作辅助 |
 | 5 | 填数据 | `cp templates/day_template.json work/{日期}/day.json`，**只改值、不加键**（`XLSX_*` 绝不进 day.json，见 runbook A15）。**day.json 双阶段（A33）**：本步骤的 day.json 保持 119 图用键 → 出图；**出图成功后**再向同一 day.json 注入 `XLSX_PREV_RESULT/XLSX_BASIS/XLSX_STATUS` 供步骤 7 的 append_row 使用（append_row 不校验键集，build_charts 才校验）。**出图前跑引号自检**（A21）：值里可含任意引号，但 `NEWS*_D` 历史上是双引号包裹，已修 |
@@ -92,6 +93,7 @@ feifeiwang/stock-daily-report
 8. 已生成日期不重做；所有数字可溯源；图片一律 JPG。
 9. **A股与港股可以反向（A28）**：恒指由内银/保险/石油等高股息权重主导，定价的是低估值与现金流；A股创业板/恒科定价的是成长与海外映射。**不能把"A股科技链杀跌"直接映射成"恒指低开"**。出现 A/H 背离时（如 2026-10-30：上证 -1.44%、创业板 -4.13%，恒指却 +1.46% 收红），四个指数必须分别定价：恒指看内银/保险/石油与南向资金，恒科与创业板才看纳指与美股 AI 链。
 10. **政策救市组合拳可独立逆转低开基准（A34）**：当盘前出现国内千亿级增量工具落地（如 SFISF 互换便利、回购增持再贷款转长期并降息）或重大稳预期会议时，**gap 方向须上修、不可单看海外隔夜**。2026-11-02 前一晚按"美股半导体/纳指走弱"给四指数低开，但三部门稳市会议+千亿回购贷+逆回购换锚+美伊谈判（地缘缓和）构成政策救市组合拳，四指数集体高开、方向性误判——凡国内有强政策托底，低开基准须打折甚至翻多。
+11. **收盘前预测（总表 N 列）不作次日点位基准（A36）**：N 列在 14:15 生成时 A股 15:00 / 港股 16:00 尚未收盘，用的是「预估收盘」锚；次日早报必须取**上一交易日实际收盘**重新定锚，只把 N 列当方向参考。政策落地日偏差可达数十点（11-04 预估 3675 / 3895 → 实际 3686.17 / 3936.02）。
 
 ## 模板固化边界（"改数字就能出图"）
 
@@ -102,11 +104,12 @@ feifeiwang/stock-daily-report
 | `templates/day_template.json` | **三张图里的每一个数字与文案**（119 个字段，按 图1/图2/图3 分组并带中文注释） | cp 一份 → 只改值、不加键 |
 | `references/md-template.md` | 当日 MD 的骨架（六节） | 按 `{}` 占位符填 |
 | `templates/prev-day-snapshot.md` | 休市日上一交易日的开/收快照 + 机械判定 + 回填命令 | 复制内容块 → 填数字 → 贴进 runbook |
+| `templates/market-data-notes.md` | **行情采集快照**（A37）：四指数开/收、板块个股、隔夜外围、来源链接、复盘素材 | 步骤 3 采集完复制到 `work/{日期}/market-data.md` 填数；会话压缩后 Read 它恢复 |
 | `templates/DATA-SCHEMA.md` | 上面 119 个字段的含义、红线、文案长度上限 | 只读，改模板前先查 |
 
 - **只改 `templates/day_template.json`**（或它的副本）：119 个字段，按 图1/图2/图3 分组并带中文注释。
-- **禁改**：`scripts/templates/gen3_images.tpl.py`（CSS/track/donut/main）、`scripts/build_charts.py` 的校验与测高逻辑、图卡结构。
-- 图1 的涨跌颜色与 ▲▼ **不要手写**：脚本由 `{指数}_PCT` 正负自动决定（历史坑：写死 up 会让跌的指数标红）。
+- **禁改**：`scripts/templates/gen3_images.tpl.py` 的布局/组件/track/donut/main、`scripts/build_charts.py` 的校验与测高逻辑、图卡结构。**例外**：确属缺陷的修复（如 A38 补 `.rev-act.up/.down` 红涨绿跌配色）可改 CSS，但须同步写进 runbook，且不许为改当日内容动骨架。
+- 图1 的涨跌颜色与 ▲▼ **不要手写**：脚本由 `{指数}_PCT` 正负自动决定（历史坑：写死 up 会让跌的指数标红）。**A38 补充**：`derive()` 只输出 `class="rev-act up/down"`，颜色须由 CSS 规则提供；验收时用像素取色或检查 `/tmp/img1.html` 是否含 `.rev-act.up{color:#f6465d}`，别只看 class 名。
 - 文案超长会溢出页脚：长度红线见 `templates/DATA-SCHEMA.md` 第 10 节，改了长文案就重跑 build_charts（它自带测高门禁）。
 - **`day.json` 的键集是封闭的**：多一个键（尤其 `XLSX_*`）脚本立刻拒绝渲染。总表相关的三个字段不属于 day.json，用命令行参数或事后补写 xlsx。
 - **模板里的引号**：`scripts/templates/gen3_images.data.py` 的占位符外层已统一为单引号，`build_charts.py` 对含引号/反斜杠的值自动做 `repr()` 转义——所以文案里**可以放心写 `<span class="hl">`**。若哪天又出现 `SyntaxError`，先查是否有人把模板改回了双引号（A21）。
