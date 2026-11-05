@@ -8,9 +8,9 @@ description: 每个交易日早晨自动预测上证/创业板/恒生/恒生科�
 ## 一句话流程
 
 ```
-交易日检查 → 拉取仓库最新（gh_sync pull）→ 读总表最近几行（含上期结论）
-→ 采集核实 → 写 MD → 改 templates/day_template.json → build_charts 出 3 张 JPG
-→ append_row 写总表（顺带回填上一日结果）→ gh_sync push + 回验 → present_files
+交易日检查 → 拉取仓库最新（git clone / gh_sync pull）→ 读总表最近几行（含上期结论）
+→ 采集核实并落盘 market-data.md → 写 MD → 改 day_values.py（纯值表）→ make_day_json 生成 day.json
+→ build_charts 出 3 张 JPG → append_row 写总表（顺带回填上一日结果）→ gh_sync push + 回验 → present_files
 ```
 
 ## 产出与归档（结构固定，勿改）
@@ -73,12 +73,12 @@ feifeiwang/stock-daily-report
 | 3 | 采集 | **优先搜"当日早报"**（金十/东财/同花顺财经早餐），一篇拿到前一日收盘+隔夜美股+当日要闻；点位用精确数字反查复核；≥2 源交叉，禁杜撰。详见 runbook A16。**收盘价只认次日早报/新华社通稿，快讯先看时间戳（A30）**；复盘个股时用 A31 的两条捷径（新华社港股通稿 + 每经沪深A股成交额榜），别逐条搜；**采集完立刻落盘 `work/{日期}/market-data.md`（A37，压缩后可恢复）** |
 | 3b | 拿开盘价 | **不用逐个反查**：搜《A股三大指数集体高开》类快讯，一篇同时给 A股 + 港股的高开涨跌幅，用 `昨收×(1+涨跌幅)` 反推（误差 <0.01）。见 runbook 2026-10-29 日志 |
 | 4 | 写 MD | 按 `references/md-template.md`，一次 Write 到 `work/{日期}/{日期}.md`；**开盘区间是第一等公民**，收盘/日内作辅助 |
-| 5 | 填数据 | `cp templates/day_template.json work/{日期}/day.json`，**只改值、不加键**（`XLSX_*` 绝不进 day.json，见 runbook A15）。**day.json 双阶段（A33）**：本步骤的 day.json 保持 119 图用键 → 出图；**出图成功后**再向同一 day.json 注入 `XLSX_PREV_RESULT/XLSX_BASIS/XLSX_STATUS` 供步骤 7 的 append_row 使用（append_row 不校验键集，build_charts 才校验）。**出图前跑引号自检**（A21）：值里可含任意引号，但 `NEWS*_D` 历史上是双引号包裹，已修 |
+| 5 | 填数据 | **A40 新口径**：`cp templates/day_values.tpl.py work/{日期}/day_values.py`，**每天只改这一个文件的数字/文字**（`VALS` 图用 + `XLSX_VALS` 总表用，内含上一日真实值样例）；`python3 scripts/make_day_json.py --template <仓库>/templates/day_template.json --values work/{日期}/day_values.py --out work/{日期}/day.json --stage chart` 生成图用 day.json。**键集封闭**（121 键 = 9 个 `_` 注释键 + 112 有效值键，脚本自动拦截未知键）；`XLSX_*` 绝不进图阶段（A15/A33）。**出图成功后**再跑同一脚本 `--stage xlsx` 注入三字段供步骤 7 的 `append_row`（append_row 不校验键集，build_charts 才校验）。**出图前跑引号自检**（A21）：`NEWS*_D` 内禁半角双引号，高亮 `<span class="hl">` 只写 `NEWS*_T` |
 | 5b | 复盘判定 | `{p}_TAG`（决定颜色）与 `{p}_TAG_TXT`（显示文案）**必须成对改**，否则出现"文案=部分、颜色=准确"。四项全准才 `tag-ok`（A22） |
 | 6 | 出三图 | `python3 work/{日期}/scripts/build_charts.py --data work/{日期}/day.json --out work/{日期}/` → 3 张 1080×1920 JPG（含区间硬校验 + 测高）；出图后**抽查图1配色，疑点先裁剪放大再改模板**（runbook A18）。**测高失败看行数不看字数**：brief 4 条总行数 ≈7 行是图1 的硬预算（A19）；区间排序按"收盘→开盘→全天"（开盘区间也有 ≤1% 隐性校验，A20） |
 | 7 | 写总表 | day.json 注入 `XLSX_*` 后：`python3 scripts/append_row.py --repo <仓库> --data work/{日期}/day.json --prev-result "上一日：开盘x/4；收盘y/4；综合n/6"`（**2026-11-04 起 `--prev-result` 只回填上一行 M 列状态、不再覆写上一行 G 列**——G 列语义是"该行自己的上一交易日结果"，新行 G 列由 `XLSX_PREV_RESULT` 提供，见 A34）；再补写第14列「收盘前预测下一交易日」占位（`vertical='top'` 字符串，别用未导入的常量） |
 | 8 | 归档 | 把 MD + 3 JPG 复制到 `<仓库>/股票预测/{YYYYMM}/` |
-| 9 | 推送 | `gh_sync.py push --msg "report: {日期}" <5 个相对路径> ...`（自带 md5 回验） |
+| 9 | 推送 | `gh_sync.py push --msg "report: {日期}" <当日 5 个路径> <本次改动的 SKILL/references/scripts/templates>`（自带 md5 回验；token 走 `GH_TOKEN` 或 `--token-file`，**绝不写进仓库/命令参数/日志**） |
 | 10 | 展示 | present_files 三张 JPG；文字给四指数开盘/收盘区间结论 + 落点 + 失败项 |
 
 ## 预测口径（用户定稿，违反即返工）
@@ -94,24 +94,26 @@ feifeiwang/stock-daily-report
 9. **A股与港股可以反向（A28）**：恒指由内银/保险/石油等高股息权重主导，定价的是低估值与现金流；A股创业板/恒科定价的是成长与海外映射。**不能把"A股科技链杀跌"直接映射成"恒指低开"**。出现 A/H 背离时（如 2026-10-30：上证 -1.44%、创业板 -4.13%，恒指却 +1.46% 收红），四个指数必须分别定价：恒指看内银/保险/石油与南向资金，恒科与创业板才看纳指与美股 AI 链。
 10. **政策救市组合拳可独立逆转低开基准（A34）**：当盘前出现国内千亿级增量工具落地（如 SFISF 互换便利、回购增持再贷款转长期并降息）或重大稳预期会议时，**gap 方向须上修、不可单看海外隔夜**。2026-11-02 前一晚按"美股半导体/纳指走弱"给四指数低开，但三部门稳市会议+千亿回购贷+逆回购换锚+美伊谈判（地缘缓和）构成政策救市组合拳，四指数集体高开、方向性误判——凡国内有强政策托底，低开基准须打折甚至翻多。
 11. **收盘前预测（总表 N 列）不作次日点位基准（A36）**：N 列在 14:15 生成时 A股 15:00 / 港股 16:00 尚未收盘，用的是「预估收盘」锚；次日早报必须取**上一交易日实际收盘**重新定锚，只把 N 列当方向参考。政策落地日偏差可达数十点（11-04 预估 3675 / 3895 → 实际 3686.17 / 3936.02）。
+12. **A/H 完全脱钩：同一隔夜变量在两地符号可以相反（A39）**：A28 的「可反向」要再进一层。2026-11-05 美股 AI 硬件（监管/反垄断/数据中心审批）风险令资金从美股高估值 AI 硬件切向**港股互联网估值洼地**，A股低开高走仅微涨（上证 +0.10%、创业板 +0.87%），港股科网却独立暴涨（恒指 +3.67%、恒科 +5.55%），早报给恒指/恒科的窄幅高开区间分别破上沿 **287 / 199 点**。执行三条：①恒指/恒科**绝不由 A股方向或 A股科技链反推**，四指数各自列「隔夜变量 → 本地符号」再定价；②「费半/纳指大跌」对 A股科技链是开盘压制、对港股科网**可能反而是资金分流利好**，禁止用一个方向套四指数；③港股单日 ≥+4% 后拥挤度骤升（南向净流出、成交放大），次日不可线性外推，方向给「回吐/分化」而非继续追高。
 
 ## 模板固化边界（"改数字就能出图"）
 
-四件套各管一摊，**每日只需改 `day_template.json` 一个文件**：
+四件套各管一摊，**每日只需改 `work/{日期}/day_values.py` 一个文件**（从 `templates/day_values.tpl.py` cp 来，见 runbook A40）：
 
 | 模板 | 管什么 | 改法 |
 |---|---|---|
-| `templates/day_template.json` | **三张图里的每一个数字与文案**（119 个字段，按 图1/图2/图3 分组并带中文注释） | cp 一份 → 只改值、不加键 |
+| `templates/day_values.tpl.py` | **每日唯一要改**：三图全部数字与文案（`VALS`）+ 总表三字段（`XLSX_VALS`），带分组注释与 11-06 真实值样例（A40） | cp 成 `day_values.py` → 只改数字文字 → 交给 `make_day_json.py` 两阶段 |
+| `templates/day_template.json` | 键集母版（121 键 = 9 个 `_` 注释键 + 112 有效值键） | **不改**，由生成器读取 |
 | `references/md-template.md` | 当日 MD 的骨架（六节） | 按 `{}` 占位符填 |
 | `templates/prev-day-snapshot.md` | 休市日上一交易日的开/收快照 + 机械判定 + 回填命令 | 复制内容块 → 填数字 → 贴进 runbook |
 | `templates/market-data-notes.md` | **行情采集快照**（A37）：四指数开/收、板块个股、隔夜外围、来源链接、复盘素材 | 步骤 3 采集完复制到 `work/{日期}/market-data.md` 填数；会话压缩后 Read 它恢复 |
-| `templates/DATA-SCHEMA.md` | 上面 119 个字段的含义、红线、文案长度上限 | 只读，改模板前先查 |
+| `templates/DATA-SCHEMA.md` | 上面 112 个有效值字段的含义、红线、文案长度上限 | 只读，改值表前先查 |
 
-- **只改 `templates/day_template.json`**（或它的副本）：119 个字段，按 图1/图2/图3 分组并带中文注释。
+- **只改 `work/{日期}/day_values.py`**：`VALS` 覆盖三图全部值，`XLSX_VALS` 供总表；**键名一律不许新增**，键集由 `scripts/make_day_json.py` 对照 `day_template.json` 自动校验（A40）。模板里少写某个键 = 沿用旧值，写错键名会直接被脚本拒绝。
 - **禁改**：`scripts/templates/gen3_images.tpl.py` 的布局/组件/track/donut/main、`scripts/build_charts.py` 的校验与测高逻辑、图卡结构。**例外**：确属缺陷的修复（如 A38 补 `.rev-act.up/.down` 红涨绿跌配色）可改 CSS，但须同步写进 runbook，且不许为改当日内容动骨架。
 - 图1 的涨跌颜色与 ▲▼ **不要手写**：脚本由 `{指数}_PCT` 正负自动决定（历史坑：写死 up 会让跌的指数标红）。**A38 补充**：`derive()` 只输出 `class="rev-act up/down"`，颜色须由 CSS 规则提供；验收时用像素取色或检查 `/tmp/img1.html` 是否含 `.rev-act.up{color:#f6465d}`，别只看 class 名。
 - 文案超长会溢出页脚：长度红线见 `templates/DATA-SCHEMA.md` 第 10 节，改了长文案就重跑 build_charts（它自带测高门禁）。
-- **`day.json` 的键集是封闭的**：多一个键（尤其 `XLSX_*`）脚本立刻拒绝渲染。总表相关的三个字段不属于 day.json，用命令行参数或事后补写 xlsx。
+- **`day.json` 的键集是封闭的**：多一个键（尤其 `XLSX_*`）`build_charts.py` 立刻拒绝渲染，`make_day_json.py --stage chart` 会提前拦截。总表三字段**只在出图成功后**用 `--stage xlsx` 注入同一 day.json（A33/A40）。
 - **模板里的引号**：`scripts/templates/gen3_images.data.py` 的占位符外层已统一为单引号，`build_charts.py` 对含引号/反斜杠的值自动做 `repr()` 转义——所以文案里**可以放心写 `<span class="hl">`**。若哪天又出现 `SyntaxError`，先查是否有人把模板改回了双引号（A21）。
 - **总表第 14 列「收盘前预测下一交易日」**：当日早晨只写占位（列出今晨已锁定的四指数区间），真正的收盘前预判需在 14:30 前后另有流程填写。
 
@@ -121,6 +123,7 @@ feifeiwang/stock-daily-report
 |---|---|
 | `scripts/gh_sync.py` | 拉取/推送/回验仓库（HTTPS API，不依赖 git，中文路径已编码） |
 | `scripts/holidays.py` | A股/港股交易日判定（动态 + 静态兜底），打印 `SKIP:` 表示两地同休；`--next N` 列出之后 N 个开盘日 |
+| `scripts/make_day_json.py` | **值表 → day.json**（键集封闭校验 + `--stage chart` / `--stage xlsx` 两阶段，A40） |
 | `scripts/build_charts.py` | day.json → 三张 JPG（区间校验 → 渲染 → 测高 → 转 JPG） |
 | `scripts/append_row.py` | 总表追加当日行 + 回填上一日结果 + 查重 |
 | `scripts/templates/gen3_images.tpl.py` | 三图骨架（禁改） |
