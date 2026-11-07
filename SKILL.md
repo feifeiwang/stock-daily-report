@@ -34,7 +34,7 @@ feifeiwang/stock-daily-report
 
 ## 无人值守规则
 
-1. **先判交易日**：`python3 scripts/holidays.py --next 3`。输出含 `SKIP:` 才结束（两地同休，走下面「休市日标准动作」），否则继续；单市场休市时在 MD 里注明，另一市场照常预测。
+1. **先判交易日 + 幂等**：`python3 scripts/skip_day.py --repo <仓库绝对路径> --date <今日> --next 3 --log-out work/{日期}/runbook-entry.md`（脚本内部调 `holidays.py`）。`VERDICT=TRADE` 走「每日执行清单」；`VERDICT=SKIP` 走下面「休市日标准动作」，且**必须按输出的 `ACTION` 分支**（A45）：`SKIP_ONLY`（上一交易日已定稿，连续休市日）只写日志+推送，`FINALIZE_THEN_LOG` 才做预取+定稿回填，`REVIEW_MISMATCH` 先人工复核、不自动写表。脚本顺带打印 `XLSX_PREV_RESULT` 与月份目录是否存在，照抄即可；单市场休市时在 MD 里注明，另一市场照常预测。
 2. **沙箱每次可能是新的**：技能目录可能不存在，**仓库就是技能的活体备份**。开工第一步永远 `git clone`，从仓库取脚本/模板/本 runbook（A23）。
 3. 已存在的日期不重做：`gh_sync.py pull` 后检查 `股票预测/YYYYMM/{日期}.md` 与总表 B 列。
 4. 不提问、不中断；缺数据就用保守区间并在 MD「数据来源/假设」里写明。
@@ -43,15 +43,23 @@ feifeiwang/stock-daily-report
 
 ## 休市日标准动作（周末 / 两地同休，必走）
 
-判定为 `SKIP:` 后**不生成任何预测产物**，但仍要跑完下面 5 步，否则下一次开盘会丢上下文（A26）：
+判定为 `SKIP:` 后**不生成任何预测产物**，但仍要跑完下面步骤，否则下一次开盘会丢上下文（A26）。
+**先做第 0 步幂等判定（A45）；第 2/3 步只在 `ACTION=FINALIZE_THEN_LOG` 时执行。**
 
-1. **记下一开盘日**：`holidays.py --next 3` 已打印（如 `2026-11-02 星期一 A股+港股同开`），写进本次运行日志。跨月时一并确认新月份目录（如 `202611`）会被自动创建。
-2. **预取上一交易日实际数据**（A27）：搜「次日早报 + 新华社港股通稿 + 行情表」≥2 源交叉（A30），把四指数实际开/收、板块/个股表现填进 `work/{日期}/prev_day_verify.py`（从 `templates/prev-day-verify.tpl.py` cp 来，A44）；表格骨架也可参照 `templates/prev-day-snapshot.md`，贴进 `references/runbook.md` 的运行日志。**隔了一两天再搜，搜索引擎更容易返回旧年份数据（A16）**，所以休市日顺手取最稳。**采集完立刻落盘 `work/{日期}/market-data.md`（A37）**，防止会话压缩丢失数字。
-3. **核对并一次定稿**（A29）：把**板块与个股也核完**，直接给出综合分，**不要留"待下一交易日核对"**——下一交易日 07:30 要出报告，时间最紧、核对质量最差。个股核对走 A31 的两条捷径。**用 `scripts/finalize_prev_day.py` 一键算分 + 回填 + 出快照**（A44）：`cp templates/prev-day-verify.tpl.py work/{日期}/prev_day_verify.py` → **只改这一个文件的数字/文字** → `python3 scripts/finalize_prev_day.py --repo <仓库绝对路径> --values work/{日期}/prev_day_verify.py --snapshot-out work/{日期}/runbook-snapshot.md`（可先加 `--dry-run` 试算）。脚本会机械算分（A41）、校验总表末行日期与「待验证」状态、**只写 M 列 + 置绿底 `FFE2F0D9`、G 列绝对不动**（A34/A42），并生成可直接贴进 runbook 的定稿快照 + 打印下一交易日 `XLSX_PREV_RESULT` 摘要串。
+0. **幂等判定（必做，A45）**：`python3 scripts/skip_day.py --repo <仓库绝对路径> --date <今日> --next 3 --log-out work/{日期}/runbook-entry.md`。读输出的 `ACTION` 分流：
+   - `SKIP_ONLY` —— **连续休市日 / 上一交易日已定稿**（总表末行 M 列已是「已验证」）：**跳过第 2/3 步**，直接到第 4 步。**绝不重复采集、绝不重复回填、绝不覆写总表任何单元格**。可按需只预取周末消息面落盘 `work/{日期}/market-data.md`（A37）给下一开盘日省时间，但不做评分定稿。
+   - `FINALIZE_THEN_LOG` —— 末行仍「待验证」：顺序执行第 2/3 步。
+   - `REVIEW_MISMATCH` —— 末行日期 ≠ 最近交易日：先复核，不自动写表。
+   脚本同时打印下一开盘日 `XLSX_PREV_RESULT`（新行 G 列摘要串）与 `MONTH_EXISTS`，并生成可直接贴进 runbook 的日志骨架（模板 `templates/skip-day-log.tpl.md`，**改数字文字即可**）。
+   > **为什么需要这一步**：每个周末都有周六、周日两个休市日，第二天的「上一交易日」仍是同一个且第一天已定稿；无脑跑 `finalize_prev_day.py` 会被「M 列不含待验证」拒绝（报错退出），还可能重复联网搜索或人工覆写已回填行（A45）。
+
+1. **记下一开盘日**：`skip_day.py` / `holidays.py --next 3` 已打印（如 `2026-11-09 星期一 A股+港股同开`），写进本次运行日志。跨月时一并确认新月份目录（如 `202611`）会被自动创建。
+2. **预取上一交易日实际数据**（A27，**仅 `FINALIZE_THEN_LOG` 时执行**）：搜「次日早报 + 新华社港股通稿 + 行情表」≥2 源交叉（A30），把四指数实际开/收、板块/个股表现填进 `work/{日期}/prev_day_verify.py`（从 `templates/prev-day-verify.tpl.py` cp 来，A44）；表格骨架也可参照 `templates/prev-day-snapshot.md`，贴进 `references/runbook.md` 的运行日志。**隔了一两天再搜，搜索引擎更容易返回旧年份数据（A16）**，所以休市日顺手取最稳。**采集完立刻落盘 `work/{日期}/market-data.md`（A37）**，防止会话压缩丢失数字。
+3. **核对并一次定稿**（A29，**仅 `FINALIZE_THEN_LOG` 时执行**）：把**板块与个股也核完**，直接给出综合分，**不要留"待下一交易日核对"**——下一交易日 07:30 要出报告，时间最紧、核对质量最差。个股核对走 A31 的两条捷径。**用 `scripts/finalize_prev_day.py` 一键算分 + 回填 + 出快照**（A44）：`cp templates/prev-day-verify.tpl.py work/{日期}/prev_day_verify.py` → **只改这一个文件的数字/文字** → `python3 scripts/finalize_prev_day.py --repo <仓库绝对路径> --values work/{日期}/prev_day_verify.py --snapshot-out work/{日期}/runbook-snapshot.md`（可先加 `--dry-run` 试算）。脚本会机械算分（A41）、校验总表末行日期与「待验证」状态、**只写 M 列 + 置绿底 `FFE2F0D9`、G 列绝对不动**（A34/A42），并生成可直接贴进 runbook 的定稿快照 + 打印下一交易日 `XLSX_PREV_RESULT` 摘要串。
    > **G 列语义红线（A42，2026-11-07 修正）**：G 列是「该行自己的上一交易日结果」，休市日回填**只改 M 列**；本节旧版写的「G 列写 `MM-DD：…`」是 A34 之前的过时口径，照做会把 G 列覆写成该行自身结果，正是 11-04 踩过的坑（A34）。
    > 回填后提示下一交易日：**`--prev-result` 不再生效**（上一行已非「待验证」），改用 `day.json` 的 `XLSX_PREV_RESULT` 写摘要串（脚本已打印，照抄即可）。
-4. **写运行日志 + 推送**：runbook 追加当日 `SKIP` 条目（日期 + 判定输出 + 下一开盘日 + 定稿快照），把 `SKILL.md`/`references/*`/`scripts/*`/`templates/*` 与总表的改动一并 `gh_sync.py push`。
-5. **收尾**：不新建总表行、不建 `股票预测/YYYYMM/` 下任何文件、不调 `build_charts`/`append_row`；用 `send_automation_result` 回报"今日休市未生成报告 + 下一开盘日"。
+4. **写运行日志 + 推送**：runbook 追加当日 `SKIP` 条目（**用 `skip_day.py --log-out` 生成的骨架**，补「本轮增量」一段即可；日期 + 判定输出 + `ACTION` + 下一开盘日 + 定稿快照/或「已定稿沿用」），把 `SKILL.md`/`references/*`/`scripts/*`/`templates/*` 与总表的改动一并 `gh_sync.py push`。`SKIP_ONLY` 时总表零改动，推送清单里不要带总表。
+5. **收尾**：不新建总表行、不建 `股票预测/YYYYMM/` 下任何文件、不调 `build_charts`/`append_row`/`finalize_prev_day`；用 `send_automation_result` 回报"今日休市未生成报告 + 下一开盘日"。
    > 判定红线：**两地均休市才跳过**。只有港股休（如香港公众假期）或只有 A 股休（如内地法定假日）时照常产出，只在 MD 正文注明。
    >
    > **数据红线（A30）**：收盘数据一律以**次日早报 / 新华社通稿**为准。财经快讯站点的"XX指数跌X%报XXXX点"标题里的"收盘"二字常与时间戳不符（见过 09:31 发的"收盘"稿，与真实收盘方向相反），拿到先看时间戳是否 ≥15:00，且必须与第二个源交叉。
@@ -111,6 +119,7 @@ feifeiwang/stock-daily-report
 | `templates/prev-day-snapshot.md` | 休市日上一交易日的开/收快照 + 机械判定 + 回填命令 | 复制内容块 → 填数字 → 贴进 runbook |
 | `templates/prev-day-verify.tpl.py` | **休市日/次日定稿唯一要改的纯值表**（A44）：四指数预测区间 vs 实际开收、方向符号、板块/个股得分与文字、累计分、来源 | cp 成 `work/{日期}/prev_day_verify.py` → 只改数字文字 → 交给 `finalize_prev_day.py` |
 | `templates/market-data-notes.md` | **行情采集快照**（A37）：四指数开/收、板块个股、隔夜外围、来源链接、复盘素材 | 步骤 3 采集完复制到 `work/{日期}/market-data.md` 填数；会话压缩后 Read 它恢复 |
+| `templates/skip-day-log.tpl.md` | **休市日运行日志骨架**（A45）：交易日判定、`ACTION`、下一开盘日、总表状态、推送清单 | 由 `scripts/skip_day.py --log-out` 自动填值产出，**只补「本轮增量」一段**，不用重写骨架 |
 | `templates/DATA-SCHEMA.md` | 上面 112 个有效值字段的含义、红线、文案长度上限 | 只读，改值表前先查 |
 
 > **休市日/定稿口径（A41，2026-11-07 固化）**：评分一律由 `finalize_prev_day.py` 机械判定——区间命中 = 1、**方向对但出区间 = 0.5**、方向反 = 0；综合 /6 = 开盘÷2 + 收盘÷2 + 板块 + 个股。历史上「方向对但出区间」有时记 0、有时记 0.5（口径漂移），此后统一按 `references/excel-spec.md` 4.1/4.3 执行，不再手工给分。方向由值表里的 `*_pred_sign(-1/0/1)` 与 `sign(实际值 − 昨收)` 比较，不做主观幅度判断。
@@ -133,6 +142,7 @@ feifeiwang/stock-daily-report
 | `scripts/build_charts.py` | day.json → 三张 JPG（区间校验 → 渲染 → 测高 → 转 JPG） |
 | `scripts/append_row.py` | 总表追加当日行 + 回填上一日结果 + 查重 |
 | `scripts/finalize_prev_day.py` | **休市日/次日定稿一条龙**（A44）：纯值表 → 机械算分（A41）→ 只回填 M 列 + 绿底（G 列不动，A42）→ 生成可贴 runbook 的快照 md → 打印下一交易日 `XLSX_PREV_RESULT`；自带日期/状态校验与 `--dry-run` |
+| `scripts/skip_day.py` | **休市日幂等守卫**（A45）：一条命令判交易日 + 读总表末行是否已定稿 → 输出 `VERDICT` / `FINALIZE_STATE` / `ACTION` / `XLSX_PREV_RESULT` / 月份目录，并用 `templates/skip-day-log.tpl.md` 生成日志骨架；`--date` 可回放任意日，`TRADE`/`PENDING`/`ALREADY_FINALIZED`/`MISMATCH` 四分支均自带校验。**杜绝连续休市日重复采集、重复回填、覆写已定稿行** |
 | `scripts/templates/gen3_images.tpl.py` | 三图骨架（禁改） |
 | `scripts/templates/gen3_images.data.py` | 三图数据区模板（`{{占位符}}`） |
 | `scripts/measure_heights.py` | 屏高实测（build_charts 内部调用） |
