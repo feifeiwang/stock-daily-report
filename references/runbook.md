@@ -102,6 +102,7 @@
 - **归档与推送**：`股票预测/202611/{2026-11-09.md,_1/_2/_3.jpg}` + `股票预测/股票预测总表.xlsx` + `SKILL.md` + `references/runbook.md` + 新增 `templates/long-gap-day-notes.md` 一并 `gh_sync.py push`（md5 回验）。
 - **11-10 开工提示**：① 月份目录仍 `股票预测/202611/`；② 本行 M13 为「待验证」，11-10 早报须先取 11-09 实际收盘复核本期四区间（本期给的是温和高开，若实际大幅低开则方向判反，按 A41 机械口径计 0）；
   ③ 11-10 的 `XLSX_PREV_RESULT` 由本期复盘结果提供，`--prev-result` 会回填 M13；④ 11-10 有美国 10 月 CPI（12/8-9 议息前最后读数）与中美 CPI 同日，是本周最大外生变量。
+- **小坑（本轮，不新增编号）**：推送后想做**独立匿名回读**复核（`urllib` 不带 token 调 Contents API）返回 `HTTP 403 rate limit exceeded`——匿名配额在本环境常已耗尽，但**带授权 token 的请求正常**（`gh_sync.py` 的 `pull/verify` 本来就走 `token_of()`，不受影响）。→ 结论：**回读校验一律走 `gh_sync.py verify`（自带 token + md5 回验）或带 `Authorization: Bearer` 的 API，不要图省事用匿名 GET**；若真要匿名，只查 codeload/raw 域名。本轮已改用授权回读验证通过（目录 4 文件齐全、总表 13 行末行 11-09、M13 待验证、N13 占位齐全）。
 
 ### 2026-11-08 休市日（周日）— SKIP，连续第二个休市日；未生成任何报告、总表零改动
 
