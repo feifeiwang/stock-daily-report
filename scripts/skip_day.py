@@ -186,6 +186,40 @@ def main():
     if a.log_out:
         tpl = a.tpl or os.path.normpath(
             os.path.join(_HERE, "..", "templates", "skip-day-log.tpl.md"))
+        # A45 补丁（2026-11-14）：旧模板把「不改动总表任何单元格 / 总表零改动」写死，
+        # 但 FINALIZE_THEN_LOG 分支实际会由 finalize_prev_day.py 回填末行 M 列（只改 M+G不动）。
+        # 按 ACTION 注入正确措辞，避免日志与真实动作矛盾、把总表漏出推送清单。
+        if action == "FINALIZE_THEN_LOG":
+            produce_note = (
+                "**本次产出边界（FINALIZE_THEN_LOG，A45 补丁）**：不写 MD、不出三图、"
+                "不新建总表行、不建 `{MONTH_DIR}/` 下任何日期文件；"
+                "**但会回填 `股票预测/股票预测总表.xlsx` 末行 M 列**"
+                "（`finalize_prev_day.py` 只写 M 列「待验证→已验证」+绿底 FFE2F0D9，"
+                "G 列绝对不动，A34/A42）——总表**不是零改动**。".replace("{MONTH_DIR}", month_dir)
+            )
+            push_note = (
+                "`references/runbook.md` 本条日志 + 本次改动的 `SKILL.md`/`scripts/*`/`templates/*` "
+                "**+ `股票预测/股票预测总表.xlsx`**（M 列已回填，必须带上；A53 推送前复核 md5）。"
+            )
+        elif action == "SKIP_ONLY":
+            produce_note = (
+                "**本次不产出（SKIP_ONLY）**：不写 MD、不出三图、不新建总表行、"
+                "**不改动 `股票预测/股票预测总表.xlsx` 任何单元格**、"
+                "不建 `{MONTH_DIR}/` 下任何文件。".replace("{MONTH_DIR}", month_dir)
+            )
+            push_note = (
+                "`references/runbook.md` 本条日志 + 本次改动的 `SKILL.md`/`scripts/*`/`templates/*`；"
+                "**总表零改动，推送清单不要带总表**。"
+            )
+        else:  # REVIEW_MISMATCH
+            produce_note = (
+                "**本次不产出（REVIEW_MISMATCH）**：末行日期与最近交易日不一致，"
+                "先人工复核，不自动采集、不回填、不新建行、不改动总表任何单元格。"
+            )
+            push_note = (
+                "仅 `references/runbook.md` 本条日志（记录待复核）；总表与产物零改动，"
+                "**待人工复核后再推送**。"
+            )
         vals = dict(
             DATE=d.isoformat(), WEEKDAY=wd, HOLIDAY_OUT=holiday_out,
             NEXT_OPEN=next_open, NEXT_WEEKDAY=nxt[0][1] if nxt else "",
@@ -195,6 +229,7 @@ def main():
             FINALIZE_STATE=state, ACTION=action,
             XLSX_PREV_RESULT=prev_result or "（待 finalize_prev_day.py 打印）",
             N_COL=last["n"][:100].replace("\n", " "),
+            PRODUCE_NOTE=produce_note, PUSH_NOTE=push_note,
         )
         md = render_log(tpl, vals)
         if md is None:
