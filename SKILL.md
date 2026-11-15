@@ -36,7 +36,7 @@ feifeiwang/stock-daily-report
 
 1. **先判交易日 + 幂等**：`python3 scripts/skip_day.py --repo <仓库绝对路径> --date <今日> --next 3 --log-out work/{日期}/runbook-entry.md`（脚本内部调 `holidays.py`）。`VERDICT=TRADE` 走「每日执行清单」；`VERDICT=SKIP` 走下面「休市日标准动作」，且**必须按输出的 `ACTION` 分支**（A45）：`SKIP_ONLY`（上一交易日已定稿，连续休市日）只写日志+推送（另可做「休市日两项可选增强」：A46 第二层预取 + 出图链路健康预检，详见下节），`FINALIZE_THEN_LOG` 才做预取+定稿回填，`REVIEW_MISMATCH` 先人工复核、不自动写表。脚本顺带打印 `XLSX_PREV_RESULT` 与月份目录是否存在，照抄即可；单市场休市时在 MD 里注明，另一市场照常预测。
 2. **沙箱每次可能是新的**：技能目录可能不存在，**仓库就是技能的活体备份**。开工第一步永远 `git clone`，从仓库取脚本/模板/本 runbook（A23）。
-3. 已存在的日期不重做：`gh_sync.py pull` 后检查 `股票预测/YYYYMM/{日期}.md` 与总表 B 列。
+3. 已存在的日期不重做：检查 `股票预测/YYYYMM/{日期}.md` 与总表 B 列。**⚠️ A63：`gh_sync.py pull` 只按 size 判 keep、size 不同就直接覆盖本地文件——`pull` 只能发生在 `git clone` 之后、任何本地写操作（append_row / 补写 N 列 / 归档 cp / 改 SKILL）之前；一旦开始产出，推送前严禁再 pull**（本轮 11-16 在 append_row 后为「确认远端无新增行」多跑一次 pull，把 18 行总表覆盖回远端 17 行，N18 与第 18 行全丢、重做一遍）。需要确认远端是否有别人新增行时，只读远端即可（如 `git ls-remote` 或 clone 后直接看），不要 `pull` 落地。幂等查重靠 clone 后的本地检查（A9）。
 4. 不提问、不中断；缺数据就用保守区间并在 MD「数据来源/假设」里写明。
 5. 任一步失败：记录原因，继续能独立完成的步骤，最终总结如实报告，**不静默跳过**。
 6. **长会话可能被上下文压缩（A37）**：步骤 3 采集完立刻把行情数据落盘到 `work/{日期}/market-data.md`（按 `templates/market-data-notes.md`）；若发现上下文被压缩、具体数字丢失，先 Read 该快照恢复，不要重新联网搜一遍。
@@ -87,12 +87,12 @@ feifeiwang/stock-daily-report
 | 3 | 采集 | **优先搜"当日早报"**（金十/东财/同花顺财经早餐），一篇拿到前一日收盘+隔夜美股+当日要闻；点位用精确数字反查复核；≥2 源交叉，禁杜撰。详见 runbook A16。**收盘价只认次日早报/新华社通稿，快讯先看时间戳（A30）；同日多份早报数据互斥按 A49/A51 四步校验裁决（骨架 `templates/data-conflict-triage.md`，方向互斥补 ETF/成分结构佐证）；**取隔夜数据前先做 A56 时序对齐**（`cp templates/overnight-timeline-check.md work/{日期}/` 只改数字文字）：早报常把「解释昨日走势的旧隔夜（美东 T-2）」与「今日定价的新隔夜（美东 T-1）」两组方向相反数据写在同一篇，先按美东日期分组+事件时序自洽裁决，采用新隔夜、弃用旧隔夜并写明；**板块/个股结论先按 A52 情绪周期重置**（`cp templates/emotion-cycle-reset.md work/{日期}/` 定档后只改数字文字，禁止沿用昨日结构）**；复盘个股时用 A31 的两条捷径（新华社港股通稿 + 每经沪深A股成交额榜），别逐条搜；**周一/节后首日必读 A46**：隔夜=最近一个美股交易日收盘+整个休市消息面两层，先 `cp templates/long-gap-day-notes.md work/{日期}/` 拆开时点，别把周末机构滞后定调当最新定价（A46 与 A56 并用）；**放量突破日必读 A55**：给收盘区间上沿留缓冲；**隔夜偏空 / 疑似高开低走日必读 A61**（`cp templates/gap-up-fade-day-notes.md work/{日期}/` 只改数字文字）：四指数分别列「隔夜变量→本地符号」定开盘方向、禁止同向给低开，高开低走候选日下沿缓冲放大到 0.6~1.0pct 并在 MD 写明区间仅作方向参考；**采集完立刻落盘 `work/{日期}/market-data.md`（A37，压缩后可恢复）** |
 | 3b | 拿开盘价 | **不用逐个反查**：搜《A股三大指数集体高开》类快讯，一篇同时给 A股 + 港股的高开涨跌幅，用 `昨收×(1+涨跌幅)` 反推（误差 <0.01）。见 runbook 2026-10-29 日志 |
 | 4 | 写 MD | 按 `references/md-template.md`，一次 Write 到 `work/{日期}/{日期}.md`；**开盘区间是第一等公民**，收盘/日内作辅助 |
-| 5 | 填数据 | **A40 新口径**：`cp templates/day_values.tpl.py work/{日期}/day_values.py`，**每天只改这一个文件的数字/文字**（`VALS` 图用 + `XLSX_VALS` 总表用，内含上一日真实值样例）；`python3 scripts/make_day_json.py --template <仓库>/templates/day_template.json --values work/{日期}/day_values.py --out work/{日期}/day.json --stage chart` 生成图用 day.json。**键集封闭**（121 键 = 9 个 `_` 注释键 + 112 有效值键，脚本自动拦截未知键）；`XLSX_*` 绝不进图阶段（A15/A33）。**出图成功后**再跑同一脚本 `--stage xlsx` 注入三字段供步骤 7 的 `append_row`（append_row 不校验键集，build_charts 才校验）。**出图前跑引号自检**（A21）：`NEWS*_D` 内禁半角双引号，高亮 `<span class="hl">` 只写 `NEWS*_T` |
+| 5 | 填数据 | **A40 新口径**：`cp templates/day_values.tpl.py work/{日期}/day_values.py`，**每天只改这一个文件的数字/文字**（`VALS` 图用 + `XLSX_VALS` 总表用，内含上一日真实值样例）。⚠️ **A62：`day_values.py` 由 `cp` 生成后文件已存在，用 Write 工具覆盖前必须先 Read 一次**（Write 对已存在文件要求先读，否则报 `File has not been read yet`）；或直接用 `Edit`/一次性 heredoc 写，避免空跑一次。`python3 scripts/make_day_json.py --template <仓库>/templates/day_template.json --values work/{日期}/day_values.py --out work/{日期}/day.json --stage chart` 生成图用 day.json。**键集封闭**（121 键 = 9 个 `_` 注释键 + 112 有效值键，脚本自动拦截未知键）；`XLSX_*` 绝不进图阶段（A15/A33）。**出图前跑两项门禁**（A62）：①`python3 scripts/precheck_intervals.py --values work/{日期}/day_values.py`（四项硬校验前移，一次打印四指数收盘宽/开盘宽/全天宽/全天包含 + 开盘符号，违规直接退出码 1，避免撞 build_charts 才报错）；②引号自检（A21）：`NEWS*_D` 内禁半角双引号，高亮 `<span class="hl">` 只写 `NEWS*_T`。**出图成功后**再跑同一脚本 `--stage xlsx` 注入三字段供步骤 7 的 `append_row`（append_row 不校验键集，build_charts 才校验） |
 | 5b | 复盘判定 | `{p}_TAG`（决定颜色）与 `{p}_TAG_TXT`（显示文案）**必须成对改**，否则出现"文案=部分、颜色=准确"。四项全准才 `tag-ok`（A22） |
 | 6 | 出三图 | `python3 work/{日期}/scripts/build_charts.py --data work/{日期}/day.json --out work/{日期}/` → 3 张 1080×1920 JPG（含区间硬校验 + 测高）；出图后**抽查图1配色，疑点先裁剪放大再改模板**（runbook A18）。**测高失败看行数不看字数**：brief 4 条总行数 ≈7 行是图1 的硬预算（A19）；区间排序按"收盘→开盘→全天"（开盘区间也有 ≤1% 隐性校验，A20） |
 | 7 | 写总表 | day.json 注入 `XLSX_*` 后：`python3 scripts/append_row.py --repo <仓库> --data work/{日期}/day.json --prev-result "上一日：开盘x/4；收盘y/4；综合n/6"`（**2026-11-04 起 `--prev-result` 只回填上一行 M 列状态、不再覆写上一行 G 列**——G 列语义是"该行自己的上一交易日结果"，新行 G 列由 `XLSX_PREV_RESULT` 提供，见 A34）；再补写第14列「收盘前预测下一交易日」占位（`vertical='top'` 字符串，别用未导入的常量） |
 | 8 | 归档 | 把 MD + 3 JPG 复制到 `<仓库>/股票预测/{YYYYMM}/`；**必须在所有编辑之后**，推送前按 A53 复核 work↔repo 的 MD 与三图 md5 |
-| 9 | 推送 | `gh_sync.py push --msg "report: {日期}" <当日 5 个路径> <本次改动的 SKILL/references/scripts/templates>`（自带 md5 回验；token 走 `GH_TOKEN` 或 `--token-file`，**绝不写进仓库/命令参数/日志**） |
+| 9 | 推送 | `gh_sync.py push --msg "report: {日期}" <当日 5 个路径> <本次改动的 SKILL/references/scripts/templates>`（自带 md5 回验；token 走 `GH_TOKEN` 或 `--token-file`，**绝不写进仓库/命令参数/日志**）。**⚠️ A63：推送阶段不要再跑 `gh_sync.py pull`**——pull 按 size 覆盖，会冲掉已追加的总表行与 N 列；clone 已是最新，直接 push |
 | 10 | 展示 | present_files 三张 JPG；文字给四指数开盘/收盘区间结论 + 落点 + 失败项 |
 
 ## 预测口径（用户定稿，违反即返工）
@@ -165,6 +165,7 @@ feifeiwang/stock-daily-report
 | `scripts/gh_sync.py` | 拉取/推送/回验仓库（HTTPS API，不依赖 git，中文路径已编码） |
 | `scripts/holidays.py` | A股/港股交易日判定（动态 + 静态兜底），打印 `SKIP:` 表示两地同休；`--next N` 列出之后 N 个开盘日 |
 | `scripts/make_day_json.py` | **值表 → day.json**（键集封闭校验 + `--stage chart` / `--stage xlsx` 两阶段，A40） |
+| `scripts/precheck_intervals.py` | **出图前区间硬预检（A62）**：读 `day_values.py` 的 VALS 或 `day.json`，一次打印四指数 收盘宽/开盘宽/全天宽/全天包含 + 开盘符号（供 A41 pred_sign 参考），规则与 `build_charts.py validate()` 完全一致、违规退出码 1；`--values` / `--data` 双通道。把四项硬校验从「渲染阶段」前移到「填完值表、出图之前」，避免改数字来回重跑渲染 |
 | `scripts/build_charts.py` | day.json → 三张 JPG（区间校验 → 渲染 → 测高 → 转 JPG） |
 | `scripts/append_row.py` | 总表追加当日行 + 回填上一日结果 + 查重 |
 | `scripts/finalize_prev_day.py` | **休市日/次日定稿一条龙**（A44）：纯值表 → 机械算分（A41）→ 只回填 M 列 + 绿底（G 列不动，A42）→ 生成可贴 runbook 的快照 md → 打印下一交易日 `XLSX_PREV_RESULT`；自带日期/状态校验与 `--dry-run` |
