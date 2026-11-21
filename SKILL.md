@@ -41,7 +41,7 @@ feifeiwang/stock-daily-report
 5. 任一步失败：记录原因，继续能独立完成的步骤，最终总结如实报告，**不静默跳过**。
 6. **长会话可能被上下文压缩（A37）**：步骤 3 采集完立刻把行情数据落盘到 `work/{日期}/market-data.md`（按 `templates/market-data-notes.md`）；若发现上下文被压缩、具体数字丢失，先 Read 该快照恢复，不要重新联网搜一遍。
 7. **归档复制必须放在所有编辑之后（A53）**：MD 在 work 目录**定稿后**才 `cp` 到 `股票预测/YYYYMM/`；若复制之后又编辑了 work 副本，repo 侧即为过期副本。**推送前强制复核**：`cmp` work↔repo 的 MD + 三图 `md5`，任一不一致就重新 `cp` 再推。11-11 正是「复制后改了 A51附 措辞」导致 repo 侧落后 21 字节。
-8. **凭据不跨会话/压缩持久（A54）**：`GH_TOKEN` 环境变量与 token 文件不保证在上下文压缩或沙箱重建后仍存在。**推送前先确认凭据可用**；缺失时按用户提供的安全来源重新加载到 **repo 外、权限 600** 的文件，用 `--token-file` 只传路径；**凭据值绝不进入命令参数、URL、仓库文件或日志**，推完清理临时文件（A25 补充）。
+8. **凭据不跨会话/压缩持久（A54）**：`GH_TOKEN` 环境变量与 token 文件不保证在上下文压缩或沙箱重建后仍存在。**推送前先确认凭据可用**；缺失时按用户提供的安全来源重新加载到 **repo 外、权限 600** 的文件，用 `--token-file` 只传路径；**凭据值绝不进入命令参数、URL、仓库文件或日志**，推完清理临时文件（A25 补充）。**A67 兜底**：若 push 报 `ReadTimeout`/`TimeoutError`（连接已建、读超时），多半是本沙箱 Python urllib/requests 的 SSL 读卡死、而 curl 正常——改用 `python3 scripts/gh_sync_curl.py --repo-dir <仓库> --token-file <600文件> --msg <...> <路径...>`（逻辑同 gh_sync.py，走 curl 子进程），不要反复重试 urllib；超时后 PUT 可能已生效，重推前先远端 md5 核对避免覆写。
 
 9. **固化新经验编号前必做编号核查（A60）**：早报流程与 14:15 收盘前流程**共用同一 A 编号空间**，上一流程可能已在 `references/runbook.md` 运行日志或总表 N 列「建议编号 Axx」里预留了号（11-12 14:15 预留 A57/A58，11-13 早报初稿未核查险些同号异物）。**写 `prev_day_verify.py` 的 ROOT_CAUSE / 更新坑表 / 写 SKILL 口径之前**，先跑 `python3 scripts/next_exp_id.py --repo <仓库绝对路径>`：已预留编号优先认领、不得另作他用；新经验一律从「下一个可用新编号」往后取。配 `templates/exp-id-check.md`（`cp` 到 `work/{日期}/` 只改数字文字）落盘编号分配表，改完再跑一次脚本确认。
 
@@ -165,6 +165,7 @@ feifeiwang/stock-daily-report
 
 | 脚本 | 用途 |
 |---|---|
+| `scripts/gh_sync_curl.py` | **curl 兜底推送（A67）**：urllib/requests 读超时时改用，走 curl 子进程完成 push+verify，签名同 gh_sync.py，凭据仍只走 600 文件 | `python3 scripts/gh_sync_curl.py --repo-dir <仓库> --token-file <文件> --msg <...> <路径...>` |
 | `scripts/gh_sync.py` | 拉取/推送/回验仓库（HTTPS API，不依赖 git，中文路径已编码） |
 | `scripts/holidays.py` | A股/港股交易日判定（动态 + 静态兜底），打印 `SKIP:` 表示两地同休；`--next N` 列出之后 N 个开盘日 |
 | `scripts/make_day_json.py` | **值表 → day.json**（键集封闭校验 + `--stage chart` / `--stage xlsx` 两阶段，A40） |
