@@ -152,6 +152,8 @@ feifeiwang/stock-daily-report
 | `templates/DATA-SCHEMA.md` | 上面 112 个有效值字段的含义、红线、文案长度上限 | 只读，改值表前先查 |
 
 > **休市日/定稿口径（A41，2026-11-07 固化）**：评分一律由 `finalize_prev_day.py` 机械判定——区间命中 = 1、**方向对但出区间 = 0.5**、方向反 = 0；综合 /6 = 开盘÷2 + 收盘÷2 + 板块 + 个股。历史上「方向对但出区间」有时记 0、有时记 0.5（口径漂移），此后统一按 `references/excel-spec.md` 4.1/4.3 执行，不再手工给分。方向由值表里的 `*_pred_sign(-1/0/1)` 与 `sign(实际值 − 昨收)` 比较，不做主观幅度判断。
+>
+> **累计分口径（A71，2026-11-24 固化）**：值表里的 `CUM_NUM_BEFORE / CUM_DEN_BEFORE`（累计分子/分母）**一律以最近一次 `finalize_prev_day.py` 定稿处打印的权威值为准**——**不照抄常规日运行日志综述句里的累计数**（如 11-23 日志误写「53.5/126」，真值是 11-21 定稿的「71.5/156」）。常规日日志的累计数是复盘旧交易日的综述、常贴了更早历史值，照抄会凭空抹掉多次定稿得分。开工复盘时先从上一定稿快照/`finalize_prev_day.py --dry-run` 输出读取累计基数，再填值表。累计准确率 = 累计分子/分母；图1 `ACC_PCT`/`ACC_SCORE` 与 MD 复盘结论须用同一口径。
 
 - **只改 `work/{日期}/day_values.py`**：`VALS` 覆盖三图全部值，`XLSX_VALS` 供总表；**键名一律不许新增**，键集由 `scripts/make_day_json.py` 对照 `day_template.json` 自动校验（A40）。模板里少写某个键 = 沿用旧值，写错键名会直接被脚本拒绝。
 - **禁改**：`scripts/templates/gen3_images.tpl.py` 的布局/组件/track/donut/main、`scripts/build_charts.py` 的校验与测高逻辑、图卡结构。**例外**：确属缺陷的修复（如 A38 补 `.rev-act.up/.down` 红涨绿跌配色）可改 CSS，但须同步写进 runbook，且不许为改当日内容动骨架。
